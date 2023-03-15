@@ -1,5 +1,9 @@
 # Data
 *.pickle
+overview.csv
+
+# Config
+config.yml
 
 # Pycharm
 .idea

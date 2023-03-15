@@ -68,6 +68,10 @@ def load_raw_statistics(labels_file, single_speakers_file=None):
     with open(single_speakers_file, 'rb') as input_handle:
         single_speaker_ids = pickle.load(input_handle)
 
+    return data, single_speaker_ids
+
+
+def plot_statistics(data):
     labels_valid = ['N', 'Nf', 'Nx', 'Nn', 'Ns', 'Nsx']
     labels_valid.extend(['?' + label for label in labels_valid])
 
@@ -198,4 +202,6 @@ def increment_speaker_dict(dictionary, speaker_id):
 
 
 if __name__ == '__main__':
-    load_raw_statistics(Path(r'/data/statistics/labels.pickle'))
+    plot_statistics(load_raw_statistics(
+        Path(r'C:\Users\casva\PycharmProjects\Thesis\data\statistics\labels.pickle'))[0]
+                    )
