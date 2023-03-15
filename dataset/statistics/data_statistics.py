@@ -4,7 +4,7 @@ import seaborn as sns
 from matplotlib.offsetbox import AnchoredText
 from tqdm import tqdm
 
-from dataset.pose_face_detection import TierDetector, find_eaf_and_videos, EAF_DIR, find_speaker_id
+from dataset.pose.pose_face_detection import TierDetector, find_eaf_and_videos, EAF_DIR, find_speaker_id
 from utils.exceptions import EAFParsingError
 
 from concurrent.futures import ProcessPoolExecutor
@@ -94,8 +94,6 @@ def load_raw_statistics(labels_file, single_speakers_file=None):
 
                 labels.append(annotation[2])
                 seconds.append((annotation[1] - annotation[0]) * 0.001)
-                if annotation[2] in labels_valid:
-                    seconds_valid.append((annotation[1] - annotation[0]) * 0.001)
             for annotation in video[4]:
                 file = Path(video[2])
                 speaker_id = find_speaker_id(file)
@@ -103,8 +101,6 @@ def load_raw_statistics(labels_file, single_speakers_file=None):
 
                 labels.append(annotation[2])
                 seconds.append((annotation[1] - annotation[0]) * 0.001)
-                if annotation[2] in labels_valid:
-                    seconds_valid.append((annotation[1] - annotation[0]) * 0.001)
 
     clean_labels = [label if label in labels_valid else 'other' for label in labels]
     counts = Counter(clean_labels)
@@ -140,16 +136,21 @@ def load_raw_statistics(labels_file, single_speakers_file=None):
 
     fig, ax = plt.subplots()
     plt.title('Number of occurrences per label', fontsize=15)
-    bottom = np.zeros(len(occurrences['Sure']))
-    plt.bar(range(len(occurrences['Sure'])), list(occurrences['Sure']), align='center', bottom=bottom)
-    bottom += occurrences['Sure']
-    plt.bar(range(len(occurrences['Unsure'])), list(occurrences['Unsure']), align='center', bottom=bottom)
+    sns.set_context(rc={'patch.linewidth': 0.0})
+    plt.bar(range(len(occurrences['Sure'])),
+            list(occurrences['Sure']),
+            align='center')
+    plt.bar(range(len(occurrences['Unsure'])),
+            list(occurrences['Unsure']),
+            align='center',
+            bottom=list(occurrences['Sure']))
+
+    sns.set_context('paper')
     plt.legend(['Sure', 'Unsure'], fontsize=15, loc='center right')
     plt.xticks(range(len(occurrences['Sure'])), ['N', 'Nf', 'other', 'Nx', 'Ns', 'Nn', 'Nsx'],
                rotation=70, ha='center', fontsize=10)
     plt.xlim(-0.5, len(occurrences['Sure']) - 0.5)
     ax.xaxis.grid(False)
-
     at = textonly(plt.gca(),
                   "N   --> head-shake negation during sign\n"
                   "Nf  --> head-shake negation without sign\n"
@@ -170,11 +171,11 @@ def load_raw_statistics(labels_file, single_speakers_file=None):
     plt.ylabel('Occurrences (log)')
     plt.show()
 
-    plt.hist(seconds_valid, bins=100, log=True)
-    plt.title('Histogram of clean annotation lengths', fontsize=15)
-    plt.xlabel('Length (seconds)')
-    plt.ylabel('Occurrences (log)')
-    plt.show()
+    print(f'Labels: {n_annotations}')
+    print(f'Videos: {n_total_videos}')
+    print(f'Annotated videos: {n_videos}')
+    print(f'Average length (seconds): {np.mean(seconds)}')
+    print(f'Std length (seconds): {np.std(seconds)}')
 
     ...
 
@@ -197,4 +198,4 @@ def increment_speaker_dict(dictionary, speaker_id):
 
 
 if __name__ == '__main__':
-    load_raw_statistics(Path(r'C:\Users\casva\PycharmProjects\Thesis\data\statistics\labels.pickle'))
+    load_raw_statistics(Path(r'/data/statistics/labels.pickle'))

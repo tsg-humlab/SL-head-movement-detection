@@ -5,6 +5,7 @@ from pathlib import Path
 
 import cv2
 import mediapipe as mp
+import numpy as np
 from pympi.Elan import Eaf
 
 from utils.exceptions import EAFParsingError
@@ -197,8 +198,10 @@ def main(ngt_id):
     capture_right = cv2.VideoCapture(video_right)
 
     p_time = 0
-    face_detector = FaceDetector(0.70, 1)
-    pose_detector = PoseDetector()
+    face_detector_left = FaceDetector(0.70, 1)
+    pose_detector_left = PoseDetector()
+    face_detector_right = FaceDetector(0.70, 1)
+    pose_detector_right = PoseDetector()
 
     tier_detector = TierDetector(eaf)
     time_name, time_time = tier_detector.conv_timeslots()
@@ -220,16 +223,16 @@ def main(ngt_id):
             sentinel = False
             continue
 
-        draw_landmarks(image_left, face_detector, pose_detector, tier_detector, frame, tiers_left)
-        # draw_landmarks(image_right, face_detector, pose_detector, tier_detector, frame, tiers_right)
+        draw_landmarks(image_left, face_detector_left, pose_detector_left, tier_detector, frame, tiers_left)
+        draw_landmarks(image_right, face_detector_right, pose_detector_right, tier_detector, frame, tiers_right)
 
         c_time = time.time()
         fps = 1 / (c_time - p_time)
         p_time = c_time
         cv2.putText(image_left, str(int(fps)), (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 225, 0), 3)
 
-        # cv2.imshow("Image", resize_with_aspect_ratio(np.hstack([left_img, image_right]), width=1440))
-        cv2.imshow("Image", image_left)
+        cv2.imshow("Image", resize_with_aspect_ratio(np.hstack([image_left, image_right]), width=1440))
+        # cv2.imshow("Image", image_left)
         cv2.waitKey(1)
         frame += 1
 
