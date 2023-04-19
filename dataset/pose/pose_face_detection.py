@@ -9,6 +9,7 @@ import numpy as np
 from pympi.Elan import Eaf
 
 from utils.exceptions import EAFParsingError
+from utils.config import Config
 
 EAF_DIR = Path(r'E:\CorpusNGT\EAF_export_HeadMov')
 MEDIA_DIR = Path(r'E:\CorpusNGT\CNGT 720p')
@@ -168,9 +169,11 @@ def draw_landmarks(image, face_detector, pose_detector, tier_detector, frame, ti
 
 
 def find_eaf_and_videos(ngt_id):
-    eaf = Eaf(str(EAF_DIR / f'{ngt_id}.eaf'), 'pympi')
+    config = Config()
 
-    sign_videos = glob(str(MEDIA_DIR / f'{ngt_id}_S{"[0-9]" * 3}*'))
+    eaf = Eaf(str(Path(config.content["media"]["eaf"]) / f'{ngt_id}.eaf'), 'pympi')
+
+    sign_videos = glob(str(Path(config.content["media"]["body_720"]) / f'{ngt_id}_S{"[0-9]" * 3}*'))
 
     if len(sign_videos) == 1:
         raise EAFParsingError(ngt_id=ngt_id, message='This EAF is only linked to one speaker')
