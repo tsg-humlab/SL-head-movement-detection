@@ -1,6 +1,8 @@
+import os
 from pathlib import Path
 
-import cv2
+from cv2 import cv2
+from glob import glob
 import numpy as np
 
 from utils.file_processing import ambiguous_to_numpy
@@ -45,38 +47,55 @@ def cut_license(video: str | Path | np.ndarray, visual=False, window_name="Video
     return video
 
 
-import time
+def sample_frame_measurements(media_dir, n_videos=10):
+    files = glob(f'{media_dir}{os.sep}*.mp4')
+    selected = np.random.choice(files, size=n_videos, replace=False)
+
+    start_frames = None
+    end_frames = None
+
+    for video_path in selected:
+        result = measure_license_frames(video_path)
+
+        if start_frames is None:
+            start_frames = result[0]
+            end_frames = result[1]
+        else:
+            if start_frames != result[0] or end_frames != result[1]:
+                return False
+
+    return True
+
+
+def measure_license_frames(video):
+    video = ambiguous_to_numpy(video)
+
+    license_background = video[0, 0, 0]
+    start_frames = 0
+
+    for i in range(video.shape[0]):
+        if np.array_equal(video[i, 0, 0], license_background):
+            start_frames += 1
+        else:
+            break
+
+    license_background = video[-1, 0, 0]
+    end_frames = 0
+
+    for i in range(video.shape[0]-1, -1, -1):
+        if np.array_equal(video[i, 0, 0], license_background):
+            end_frames += 1
+        else:
+            break
+
+    return start_frames, end_frames
 
 
 def main():
-    path_full = r"E:\CorpusNGT\CNGT_numpy\CNGT0003_S004.npy"
-    path_compressed = r"E:\CorpusNGT\CNGT_numpy\CNGT0003_S004.npz"
+    # result = sample_frame_measurements(r'E:\CorpusNGT\CNGT_720p')
+    result = measure_license_frames(r"E:\CorpusNGT\CNGT_720p\CNGT1901_S078_b_720.mp4")
 
-    video = cut_license(r"E:\CorpusNGT\CNGT 720p\CNGT0003_S004_b_720.mp4")
-
-    start = time.time()
-    # np.save(path_full, video)
-    end = time.time()
-    save_full = (end - start)
-
-    start = time.time()
-    # np.savez_compressed(path_compressed, video)
-    end = time.time()
-    save_compressed = (end - start)
-
-    start = time.time()
-    video = np.load(path_full)
-    end = time.time()
-    load_full = (end - start)
-
-    start = time.time()
-    video = np.load(path_compressed)['arr_0']
-    end = time.time()
-    load_compressed = (end - start)
-
-    normalized_video = video / 255.0
-
-    ...
+    pass
 
 
 if __name__ == '__main__':

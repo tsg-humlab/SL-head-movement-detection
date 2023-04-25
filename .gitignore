@@ -2,6 +2,12 @@
 *.pickle
 overview.csv
 
+# Weights
+*.pt
+
+# Inference output
+runs/
+
 # Config
 config.yml
 

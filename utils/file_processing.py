@@ -13,17 +13,15 @@ def ambiguous_to_numpy(ambiguous):
     :param ambiguous: Ambiguous variable that should relate to a video file or it's contents
     :return: video: The video in numpy format
     """
-    if type(ambiguous) == str or isinstance(ambiguous, Path):
-        path = str(ambiguous)
-
-        video = vread(path)
-    elif type(ambiguous) is np.ndarray:
+    if type(ambiguous) is np.ndarray:
         assert(len(ambiguous.shape) == 4)
         assert(ambiguous.shape[-1] == 3)
 
         video = ambiguous
     else:
-        raise ValueError("Couldn't recognise ambiguous argument as a video")
+        path = str(ambiguous)
+
+        video = vread(path)
 
     return video
 
