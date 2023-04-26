@@ -4,7 +4,7 @@ import seaborn as sns
 from matplotlib.offsetbox import AnchoredText
 from tqdm import tqdm
 
-from dataset.pose.pose_face_detection_old import TierDetector, find_eaf_and_videos, EAF_DIR, find_speaker_id
+from pose import TierDetector, find_eaf_and_videos, EAF_DIR, find_speaker_id
 from utils.exceptions import EAFParsingError
 
 from concurrent.futures import ProcessPoolExecutor
@@ -180,8 +180,6 @@ def plot_statistics(data):
     print(f'Annotated videos: {n_videos}')
     print(f'Average length (seconds): {np.mean(seconds)}')
     print(f'Std length (seconds): {np.std(seconds)}')
-
-    ...
 
 
 def textonly(ax, txt, fontsize=14, loc=2, font='dejavu sans', *args, **kwargs):

@@ -1,27 +1,21 @@
+import argparse
 import os
 from pathlib import Path
 
 import cv2
 import numpy as np
-from ultralytics import YOLO
+import pandas as pd
 from moviepy.editor import VideoFileClip
+from ultralytics import YOLO
 
 from utils.config import Config
-import pandas as pd
 
 
-def process_dataset(output_dir, log_file='log.txt'):
-    config = Config()
-    overview_path = config.content['overview']
+def process_dataset(output_dir, overview_path=None, log_file='log.txt'):
+    if overview_path is None:
+        config = Config()
+        overview_path = config.content['overview']
     df_overview = pd.read_csv(overview_path)
-
-    output_dir = Path(output_dir)
-    if not os.path.exists(output_dir / 'video'):
-        os.mkdir(output_dir / 'video')
-    if not os.path.exists(output_dir / 'boxes'):
-        os.mkdir(output_dir / 'boxes')
-    if not os.path.exists(output_dir / 'keypoints'):
-        os.mkdir(output_dir / 'keypoints')
 
     log_handle = open(log_file, 'w')
 
@@ -39,7 +33,18 @@ def process_dataset(output_dir, log_file='log.txt'):
     log_handle.close()
 
 
+def create_subdirs(path):
+    path = Path(path)
+    if not os.path.exists(path / 'video'):
+        os.mkdir(path / 'video')
+    if not os.path.exists(path / 'boxes'):
+        os.mkdir(path / 'boxes')
+    if not os.path.exists(path / 'keypoints'):
+        os.mkdir(path / 'keypoints')
+
+
 def process_video(unique_id, video_path, output_dir):
+    create_subdirs(output_dir)
     model = YOLO('yolov8n-pose.pt')
     video = VideoFileClip(video_path)
 
@@ -112,5 +117,11 @@ def stack_with_padding(array_list, variable_dim=0):
 
 
 if __name__ == '__main__':
-    process_dataset(r"E:\Results\pose_detection")
-    # process_video('CNGT1590_S068', r"E:\CorpusNGT\CNGT_720p\CNGT1590_S068_b_720.mp4", Path("E:\Results\pose_detection"))
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-o', '--output-dir', type=Path, required=True)
+    parser.add_argument('-v', '--overview-path', type=Path)
+    parser.add_argument('-l', '--log-file', type=Path, default='log.txt')
+    args = parser.parse_args()
+
+    process_dataset(output_dir=args.output_dir,
+                    log_file=args.log_file)

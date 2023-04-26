@@ -9,6 +9,8 @@ class Config:
         self.config_path = config_path
         self.content = self.load_config()
 
+        self.overview = self.content['overview']
+
     def load_config(self):
         with open(self.config_path, 'r') as input_handle:
             config = yaml.safe_load(input_handle)

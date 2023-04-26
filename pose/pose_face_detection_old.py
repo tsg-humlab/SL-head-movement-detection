@@ -8,7 +8,7 @@ import mediapipe as mp
 import numpy as np
 from pympi.Elan import Eaf
 
-from dataset.pose.mp_detector import MediaPipePoseDetector
+from pose.mp_detector import MediaPipePoseDetector
 from utils.exceptions import EAFParsingError
 from utils.config import Config
 
