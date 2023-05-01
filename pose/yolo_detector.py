@@ -72,8 +72,8 @@ def process_video(unique_id, video_path, output_dir):
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             results = model(frame_rgb)
 
-            boxes = results[0].boxes.data.numpy()
-            keypoints = results[0].keypoints.data.numpy()
+            boxes = results[0].boxes.data.cpu().numpy()
+            keypoints = results[0].keypoints.data.cpu().numpy()
             n_results = boxes.shape[0]
 
             if n_results == 0:
