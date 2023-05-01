@@ -1,6 +1,7 @@
 # Data
 *.pickle
 overview.csv
+*.csv
 
 # Weights
 *.pt
