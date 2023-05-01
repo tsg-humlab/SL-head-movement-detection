@@ -35,6 +35,9 @@ def process_dataset(output_dir, overview_path=None, log_file='log.txt'):
 
 def create_subdirs(path):
     path = Path(path)
+
+    if not os.path.exists(path):
+        os.mkdir(path)
     if not os.path.exists(path / 'video'):
         os.mkdir(path / 'video')
     if not os.path.exists(path / 'boxes'):
