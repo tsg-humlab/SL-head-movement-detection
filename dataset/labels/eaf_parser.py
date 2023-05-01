@@ -1,3 +1,4 @@
+import os
 from glob import glob
 from pathlib import Path
 import re
@@ -102,7 +103,7 @@ def main():
     eaf_dir = config.content['media']['eaf']
     print(f'Searching for annotation files in {eaf_dir}')
 
-    files = glob(fr'{eaf_dir}\*.eaf')
+    files = glob(fr'{eaf_dir}{os.sep}*.eaf')
     videos = []
     print(f'Found {len(files)} annotation files')
 
