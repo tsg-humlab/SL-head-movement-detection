@@ -99,7 +99,7 @@ class Annotation:
 
 def main():
     config = Config()
-    eaf_dir = config.content['media']['body_720']
+    eaf_dir = config.content['media']['eaf']
     files = glob(fr'{eaf_dir}\*.eaf')
     videos = []
 
