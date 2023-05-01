@@ -47,6 +47,8 @@ def write_overview(output_path=None):
         output_path = config.content['overview']
     videos = eaf_parser.main()
 
+    print(f'Found {len(videos)} videos')
+
     df_overview = pd.DataFrame(columns=['session_id', 'speaker_id', 'position', 'media_path'])
 
     for video in videos:
@@ -59,7 +61,9 @@ def write_overview(output_path=None):
             assert(os.path.exists(filepath))
             df_overview = add_entry(df_overview, video.ngt_id, video.signer_right.signer_id, 'right', filepath)
 
+    print(f'Writing results to {output_path}')
     df_overview.to_csv(output_path, index=False)
+    print('Complete!')
 
 
 if __name__ == '__main__':
