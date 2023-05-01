@@ -4,6 +4,8 @@ import re
 
 from pympi.Elan import Eaf
 
+from utils.config import Config
+
 
 class HeadMovementParser:
     def __init__(self, fps):
@@ -96,7 +98,9 @@ class Annotation:
 
 
 def main():
-    files = glob(r'E:\CorpusNGT\EAF_export_HeadMov\*.eaf')
+    config = Config()
+    eaf_dir = config.content['media']['body_720']
+    files = glob(fr'{eaf_dir}\*.eaf')
     videos = []
 
     for file in files:
