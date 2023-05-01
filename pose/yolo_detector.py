@@ -25,7 +25,7 @@ def process_dataset(output_dir, overview_path=None, log_file='log.txt'):
         # noinspection PyBroadException
         try:
             process_video(unique_id, row['media_path'], output_dir)
-            log_handle.write(f'Successfully processed {unique_id}')
+            log_handle.write(f'Successfully processed {unique_id}\n')
         except Exception as err:
             log_handle.write(f'Error processing {unique_id}\n')
             log_handle.write(str(err) + '\n')
@@ -124,4 +124,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     process_dataset(output_dir=args.output_dir,
+                    overview_path=args.overview_path,
                     log_file=args.log_file)
