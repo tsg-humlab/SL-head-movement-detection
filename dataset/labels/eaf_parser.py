@@ -103,12 +103,16 @@ def main():
     files = glob(fr'{eaf_dir}\*.eaf')
     videos = []
 
+    print(f'Found {len(files)} annotation files')
+
     for file in files:
         eaf = Eaf(file, 'pympi')
         video = Video.from_eaf(Path(file).stem, eaf)
 
         if len(video.signer_left.annotations) > 0 or len(video.signer_right.annotations) > 0:
             videos.append(video)
+
+    print('Parsed annotation directory')
 
     return videos
 
