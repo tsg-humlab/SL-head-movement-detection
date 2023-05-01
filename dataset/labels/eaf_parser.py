@@ -100,9 +100,10 @@ class Annotation:
 def main():
     config = Config()
     eaf_dir = config.content['media']['eaf']
+    print(f'Searching for annotation files in {eaf_dir}')
+
     files = glob(fr'{eaf_dir}\*.eaf')
     videos = []
-
     print(f'Found {len(files)} annotation files')
 
     for file in files:
