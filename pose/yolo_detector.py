@@ -9,6 +9,7 @@ from moviepy.editor import VideoFileClip
 from ultralytics import YOLO
 
 from utils.config import Config
+from pose import KEYPOINTS, BOXES, VIDEO
 
 
 def process_dataset(output_dir, overview_path=None, log_file='log.txt'):
@@ -38,12 +39,12 @@ def create_subdirs(path):
 
     if not os.path.exists(path):
         os.mkdir(path)
-    if not os.path.exists(path / 'video'):
-        os.mkdir(path / 'video')
-    if not os.path.exists(path / 'boxes'):
-        os.mkdir(path / 'boxes')
-    if not os.path.exists(path / 'keypoints'):
-        os.mkdir(path / 'keypoints')
+    if not os.path.exists(path / VIDEO):
+        os.mkdir(path / VIDEO)
+    if not os.path.exists(path / BOXES):
+        os.mkdir(path / BOXES)
+    if not os.path.exists(path / KEYPOINTS):
+        os.mkdir(path / KEYPOINTS)
 
 
 def process_video(unique_id, video_path, output_dir):
@@ -57,7 +58,7 @@ def process_video(unique_id, video_path, output_dir):
 
     capture = cv2.VideoCapture(video_path)
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    output_file = output_dir / 'video' / f'{unique_id}.mp4'
+    output_file = output_dir / VIDEO / f'{unique_id}.mp4'
     output_video = cv2.VideoWriter(str(output_file), fourcc, fps, (int(capture.get(3)), int(capture.get(4))))
 
     idx = 1
@@ -97,8 +98,8 @@ def process_video(unique_id, video_path, output_dir):
     boxes = stack_with_padding(boxes_list)
     keypoints = stack_with_padding(keypoints_list)
 
-    np.save(output_dir / 'boxes' / f'{unique_id}.npy', boxes)
-    np.save(output_dir / 'keypoints' / f'{unique_id}.npy', keypoints)
+    np.save(output_dir / BOXES / f'{unique_id}.npy', boxes)
+    np.save(output_dir / KEYPOINTS / f'{unique_id}.npy', keypoints)
 
     assert n_frames == boxes.shape[0]
     assert n_frames == keypoints.shape[0]

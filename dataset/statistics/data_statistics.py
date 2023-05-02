@@ -4,7 +4,7 @@ import seaborn as sns
 from matplotlib.offsetbox import AnchoredText
 from tqdm import tqdm
 
-from pose import TierDetector, find_eaf_and_videos, EAF_DIR, find_speaker_id
+from pose.pose_face_detection_old import TierDetector, find_eaf_and_videos, EAF_DIR, find_speaker_id
 from utils.exceptions import EAFParsingError
 
 from concurrent.futures import ProcessPoolExecutor
