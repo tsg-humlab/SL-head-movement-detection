@@ -45,7 +45,9 @@ def review_case(keypoints_file, boxes_file, media_file, person_threshold=0.4):
                 for j in range(len(keypoints[i])):
                     if not np.array_equal(keypoints[i, j], empty_prediction):
                         print(f'Person conf: {np.round(boxes[i, j, 4], 2)}')
-                        print(keypoints[i, j, :3])
+                        print(f'nose       : x = {np.round(keypoints[i, j, 0, 0])} | y = {np.round(keypoints[i, j, 0, 1])} | conf = {np.round(keypoints[i, j, 0, 2], 2)}')
+                        print(f'eye (left) : x = {np.round(keypoints[i, j, 0, 0])} | y = {np.round(keypoints[i, j, 0, 1])} | conf = {np.round(keypoints[i, j, 0, 2], 2)}')
+                        print(f'eye (right): x = {np.round(keypoints[i, j, 0, 0])} | y = {np.round(keypoints[i, j, 0, 1])} | conf = {np.round(keypoints[i, j, 0, 2], 2)}')
                         print('-' * 50)
                 print('#' * 50)
                 cv2.waitKey()
