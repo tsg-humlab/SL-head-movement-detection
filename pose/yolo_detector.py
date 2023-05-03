@@ -5,11 +5,11 @@ from pathlib import Path
 import cv2
 import numpy as np
 import pandas as pd
-from moviepy.editor import VideoFileClip
 from ultralytics import YOLO
 
-from utils.config import Config
 from pose import KEYPOINTS, BOXES, VIDEO
+from utils.config import Config
+from utils.media import get_metadata
 
 
 def process_dataset(output_dir, overview_path=None, log_file='log.txt'):
@@ -50,10 +50,8 @@ def create_subdirs(path):
 def process_video(unique_id, video_path, output_dir):
     create_subdirs(output_dir)
     model = YOLO('yolov8n-pose.pt')
-    video = VideoFileClip(video_path)
 
-    duration = video.duration
-    fps = round(video.fps)
+    duration, fps = get_metadata(video_path)
     n_frames = round(duration * fps)
 
     capture = cv2.VideoCapture(video_path)

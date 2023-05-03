@@ -1,7 +1,10 @@
 import pickle
 
+import pandas as pd
 import yaml
 from pathlib import Path
+
+from utils.overview import Overview
 
 
 class Config:
@@ -22,3 +25,6 @@ class Config:
             video_data = pickle.load(input_handle)
 
         return video_data
+
+    def get_overview(self):
+        return Overview(self.overview)
