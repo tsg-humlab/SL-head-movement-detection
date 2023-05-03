@@ -24,7 +24,7 @@ def review_all(results_dir, output_json):
         review_case(file, boxes_path, media_path)
 
 
-def review_case(keypoints_file, boxes_file, media_file, person_threshold=0.4):
+def review_case(keypoints_file, boxes_file, media_file):
     keypoints = np.load(keypoints_file)
     boxes = np.load(boxes_file)
     if keypoints.shape[1] == 1:
