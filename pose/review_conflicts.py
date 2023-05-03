@@ -35,8 +35,6 @@ def review_case(keypoints_file, boxes_file, media_file, person_threshold=0.4):
 
     for i, frame in enumerate(keypoints):
         if not np.array_equal(frame[1], empty_prediction):
-            # TODO: remove
-
             key = show_frame(capture, i, media_file.stem)
 
             if key == ord('q'):
