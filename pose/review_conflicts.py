@@ -81,13 +81,13 @@ def show_frame(capture, frame_i, target_bbox=None, title='CNGT frame'):
         raise RuntimeError(f"Couldn't load frame {frame_i} from {title}")
 
     if target_bbox is not None:
-        draw_bbox(frame, target_bbox, alpha=0.8)
+        draw_opaque_box(frame, target_bbox, alpha=0.8)
 
     cv2.imshow(title, frame)
     return cv2.waitKey()
 
 
-def draw_bbox(frame, bbox, alpha=0.5, gamma=0.5):
+def draw_opaque_box(frame, bbox, alpha=0.5, gamma=0):
     beta = 1 - alpha
     x1 = int(bbox[0])
     y1 = int(bbox[1])
