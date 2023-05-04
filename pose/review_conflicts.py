@@ -81,13 +81,14 @@ def show_frame(capture, frame_i, target_bbox=None, title='CNGT frame'):
         raise RuntimeError(f"Couldn't load frame {frame_i} from {title}")
 
     if target_bbox is not None:
-        draw_bbox(frame, target_bbox)
+        draw_bbox(frame, target_bbox, alpha=0.8)
 
     cv2.imshow(title, frame)
     return cv2.waitKey()
 
 
-def draw_bbox(frame, bbox):
+def draw_bbox(frame, bbox, alpha=0.5, gamma=0.5):
+    beta = 1 - alpha
     x1 = int(bbox[0])
     y1 = int(bbox[1])
     x2 = int(bbox[2])
@@ -96,7 +97,7 @@ def draw_bbox(frame, bbox):
     sub_img = frame[y1:y2, x1:x2]
     green_rect = np.zeros(sub_img.shape, dtype=np.uint8)
     green_rect[:, :, 1] = 255
-    res = cv2.addWeighted(sub_img, 0.5, green_rect, 0.5, 1.0)
+    res = cv2.addWeighted(sub_img, alpha, green_rect, beta, gamma)
     frame[y1:y2, x1:x2] = res
 
 
