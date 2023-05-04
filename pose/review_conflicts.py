@@ -4,29 +4,80 @@ from pathlib import Path
 
 import cv2
 import numpy as np
+import pandas as pd
 
 from pose import KEYPOINTS, VIDEO, BOXES
 from pose.analyze_results import is_output_dir
 from utils.draw import draw_opaque_box
 
 
-def review_all(results_dir, output_csv):
+def review_all(results_dir, output_csv, overwrite=False):
     """Review all the videos in a pose prediction output directory.
 
     :param results_dir: Path to the pose prediction output directory
     :param output_csv: Path to the output CSV
+    :param overwrite: True if you want to overwrite an existing CSV
     """
     assert is_output_dir(results_dir)
 
-    if not os.path.exists(output_csv):
-        pass
+    if not os.path.exists(output_csv) or overwrite:
+        df_output = pd.DataFrame(columns=['case_id', 'comment'])
+    else:
+        df_output = pd.read_csv(output_csv)
 
     files = (results_dir / KEYPOINTS).glob('*.npy')
 
     for file in files:
         media_path = results_dir / VIDEO / f'{file.stem}.mp4'
         boxes_path = results_dir / BOXES / f'{file.stem}.npy'
-        review_case(file, boxes_path, media_path)
+
+        if len(df_output[df_output['case_id'].str.contains(media_path.stem)]) > 0:
+            continue
+
+        play_case(file, boxes_path, media_path)
+
+        sentinel = True
+
+        while sentinel:
+            result = input('Approve case? (y/n)').lower()
+
+            if result == 'y':
+                sentinel = False
+            elif result == 'n':
+                review_case(file, boxes_path, media_path)
+            else:
+                print('Invalid input')
+
+        comment = input('Comment: ')
+        df_output.loc[len(df_output)] = [media_path.stem, comment]
+        df_output.to_csv(output_csv, index=False)
+
+
+def play_case(keypoints_file, boxes_file, media_file):
+    keypoints = np.load(keypoints_file)
+    boxes = np.load(boxes_file)
+
+    idx = 0
+    capture = cv2.VideoCapture(str(media_file))
+
+    while capture.isOpened():
+        ret, frame = capture.read()
+
+        if ret:
+            target_signer = find_subject(keypoints[idx], boxes[idx])
+            target_bbox = boxes[idx, target_signer]
+            if target_bbox[4] > 0:
+                draw_opaque_box(frame, boxes[idx, target_signer], alpha=0.8)
+
+            cv2.imshow(media_file.stem, frame)
+            cv2.waitKey(1)
+
+            idx += 1
+        else:
+            break
+
+    capture.release()
+    cv2.destroyAllWindows()
 
 
 def review_case(keypoints_file, boxes_file, media_file):
@@ -133,6 +184,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('results_dir', metavar='results-dir', type=Path)
     parser.add_argument('output_json', metavar='output-json', type=Path)
+    parser.add_argument('-o', '--overwrite', action='store_true')
     args = parser.parse_args()
 
-    review_all(args.results_dir, args.output_json)
+    review_all(args.results_dir, args.output_json, overwrite=args.overwrite)

@@ -8,16 +8,27 @@ import pandas as pd
 from ultralytics import YOLO
 
 from pose import KEYPOINTS, BOXES, VIDEO
+from utils.array_manipulation import stack_with_padding
 from utils.config import Config
 from utils.media import get_metadata
 
 
-def process_dataset(output_dir, overview_path=None, log_file='log.txt'):
+def process_dataset(output_dir, overview_path=None, log_file='log.txt', model_name='yolov8n-pose.pt'):
+    """Make pose predictions over an entire dataset using YOLO.
+
+    The overview file can either be provided explicitly or it will be read out of the config.yml file.
+
+    :param output_dir: Directory where the predictions should be stored
+    :param overview_path: Path to the overview CSV
+    :param log_file: Log file with success/error statements for every video in the overview (will be overwritten!)
+    :param model_name: Name of the YOLO checkpoint that should be used (default nano)
+    """
     if overview_path is None:
         config = Config()
         overview_path = config.content['overview']
     df_overview = pd.read_csv(overview_path)
 
+    create_subdirs(output_dir)
     log_handle = open(log_file, 'w')
 
     for _, row in df_overview.iterrows():
@@ -25,7 +36,7 @@ def process_dataset(output_dir, overview_path=None, log_file='log.txt'):
 
         # noinspection PyBroadException
         try:
-            process_video(unique_id, row['media_path'], output_dir)
+            process_video(unique_id, row['media_path'], output_dir, model_name=model_name)
             log_handle.write(f'Successfully processed {unique_id}\n')
         except Exception as err:
             log_handle.write(f'Error processing {unique_id}\n')
@@ -35,6 +46,12 @@ def process_dataset(output_dir, overview_path=None, log_file='log.txt'):
 
 
 def create_subdirs(path):
+    """Create (sub)directories for the prediction outputs.
+
+    If any directories already exists, they will be ignored without raising an exception.
+
+    :param path: Path to the output directory
+    """
     path = Path(path)
 
     if not os.path.exists(path):
@@ -47,9 +64,19 @@ def create_subdirs(path):
         os.mkdir(path / KEYPOINTS)
 
 
-def process_video(unique_id, video_path, output_dir):
+def process_video(unique_id, video_path, output_dir, model_name='yolov8n-pose.pt'):
+    """Make pose predictions on a single video.
+
+    I recommend using a GPU for this process, although the nano model can still be run in a reasonable time window
+    through only a CPU.
+
+    :param unique_id: Unique identifier for the video (results with the same ID will be overwritten!)
+    :param video_path: Path to the video file
+    :param output_dir: Directory to store the results in (subdirs will be created if necessary)
+    :param model_name: Name of the YOLO checkpoint that should be used (default nano)
+    """
     create_subdirs(output_dir)
-    model = YOLO('yolov8n-pose.pt')
+    model = YOLO(model_name)
 
     duration, fps = get_metadata(video_path)
     n_frames = round(duration * fps)
@@ -101,21 +128,6 @@ def process_video(unique_id, video_path, output_dir):
 
     assert n_frames == boxes.shape[0]
     assert n_frames == keypoints.shape[0]
-
-
-def stack_with_padding(array_list, variable_dim=0):
-    padded_list = []
-    shape = list(array_list[0].shape)
-
-    sizes = [array.shape[variable_dim] for array in array_list]
-    max_size = max(sizes)
-
-    for i in range(len(array_list)):
-        padding_shape = shape
-        padding_shape[0] = max_size - array_list[i].shape[0]
-        padded_list.append(np.concatenate([array_list[i], np.zeros(padding_shape)]))
-
-    return np.stack(padded_list)
 
 
 if __name__ == '__main__':
