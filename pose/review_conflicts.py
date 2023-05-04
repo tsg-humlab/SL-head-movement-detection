@@ -7,6 +7,7 @@ import numpy as np
 
 from pose import KEYPOINTS, VIDEO, BOXES
 from pose.analyze_results import is_output_dir
+from utils.draw import draw_opaque_box
 from utils.io import write_json
 
 
@@ -85,20 +86,6 @@ def show_frame(capture, frame_i, target_bbox=None, title='CNGT frame'):
 
     cv2.imshow(title, frame)
     return cv2.waitKey()
-
-
-def draw_opaque_box(frame, bbox, alpha=0.5, gamma=0):
-    beta = 1 - alpha
-    x1 = int(bbox[0])
-    y1 = int(bbox[1])
-    x2 = int(bbox[2])
-    y2 = int(bbox[3])
-
-    sub_img = frame[y1:y2, x1:x2]
-    green_rect = np.zeros(sub_img.shape, dtype=np.uint8)
-    green_rect[:, :, 1] = 255
-    res = cv2.addWeighted(sub_img, alpha, green_rect, beta, gamma)
-    frame[y1:y2, x1:x2] = res
 
 
 def find_subject(keypoints, boxes):
