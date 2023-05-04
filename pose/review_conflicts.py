@@ -8,14 +8,18 @@ import numpy as np
 from pose import KEYPOINTS, VIDEO, BOXES
 from pose.analyze_results import is_output_dir
 from utils.draw import draw_opaque_box
-from utils.io import write_json
 
 
-def review_all(results_dir, output_json):
+def review_all(results_dir, output_csv):
+    """Review all the videos in a pose prediction output directory.
+
+    :param results_dir: Path to the pose prediction output directory
+    :param output_csv: Path to the output CSV
+    """
     assert is_output_dir(results_dir)
 
-    if not os.path.exists(output_json):
-        write_json({}, output_json)
+    if not os.path.exists(output_csv):
+        pass
 
     files = (results_dir / KEYPOINTS).glob('*.npy')
 
@@ -26,6 +30,12 @@ def review_all(results_dir, output_json):
 
 
 def review_case(keypoints_file, boxes_file, media_file):
+    """Review one video for conflicts (moments where more than one person is predicted to be in the video).
+
+    :param keypoints_file: Path to a numpy file with predicted keypoints
+    :param boxes_file: Path to a numpy file with predicted bounding boxes
+    :param media_file: Path to the video file
+    """
     keypoints = np.load(keypoints_file)
     boxes = np.load(boxes_file)
     if keypoints.shape[1] == 1:
@@ -72,6 +82,17 @@ def review_case(keypoints_file, boxes_file, media_file):
 
 
 def show_frame(capture, frame_i, target_bbox=None, title='CNGT frame'):
+    """Show a specific frame from a capture using the frame index.
+
+    The index starts at 0 and ends at N_frames - 1.
+
+    You can optionally draw an opaque square over a single bounding box or provide a more descriptive title.
+
+    :param capture: OpenCV capture of a video
+    :param frame_i: Index of the frame
+    :param target_bbox: Bounding box of a person that should be highlighted
+    :param title: Title of the window
+    """
     capture.set(cv2.CAP_PROP_POS_FRAMES, frame_i)
     ret, frame = capture.read()
 
@@ -91,11 +112,15 @@ def show_frame(capture, frame_i, target_bbox=None, title='CNGT frame'):
 def find_subject(keypoints, boxes):
     """Find the subject of the video using a simple weighted average of the confidence values.
 
-    The eyes and nose of the subject are averaged together
+    The eyes and nose of the subject are averaged together and then combined with the bounding box confidence to obtain
+    a single confidence value for every person in the frame.
 
-    :param keypoints:
-    :param boxes:
-    :return:
+    Note that this function will only work when an image doesn't contain multiple persons facing the camera, if this is
+    the case then you should consider the output a random person facing the camera.
+
+    :param keypoints: Keypoint predictions on a single frame
+    :param boxes: Bounding box predictions on a single frame
+    :return: Index of the subject
     """
     face_conf = np.average(keypoints[:, :3, 2], axis=1)
     bbox_conf = boxes[:, 4]
