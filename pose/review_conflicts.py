@@ -25,7 +25,9 @@ def review_all(results_dir, output_csv, overwrite=False):
     else:
         df_output = pd.read_csv(output_csv)
 
-    files = (results_dir / KEYPOINTS).glob('*.npy')
+    i = len(df_output)
+    files = list((results_dir / KEYPOINTS).glob('*.npy'))
+    print(f'Found {len(files)} cases ({i} processed)')
 
     for file in files:
         media_path = results_dir / VIDEO / f'{file.stem}.mp4'
@@ -34,6 +36,8 @@ def review_all(results_dir, output_csv, overwrite=False):
         if len(df_output[df_output['case_id'].str.contains(media_path.stem)]) > 0:
             continue
 
+        i += 1
+        print(f'Case {i}/{len(files)}')
         play_case(file, boxes_path, media_path)
 
         sentinel = True
@@ -96,13 +100,21 @@ def review_case(keypoints_file, boxes_file, media_file):
     empty_prediction = np.zeros((17, 3))
 
     for i, frame in enumerate(keypoints):
-        if not np.array_equal(frame[1], empty_prediction):
+        if i < 75:
+            continue
+
+        if not np.array_equal(frame[1], empty_prediction) or np.array_equal(frame[0], empty_prediction):
             target_signer = find_subject(keypoints[i], boxes[i])
 
-            key = show_frame(capture,
-                             i,
-                             target_bbox=boxes[i, target_signer, :4],
-                             title=media_file.stem)
+            if np.array_equal(frame[0], empty_prediction):
+                key = show_frame(capture,
+                                 i,
+                                 title=media_file.stem)
+            else:
+                key = show_frame(capture,
+                                 i,
+                                 target_bbox=boxes[i, target_signer, :4],
+                                 title=media_file.stem)
 
             if key == ord('q'):
                 break
