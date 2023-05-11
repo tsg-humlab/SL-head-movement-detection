@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import cv2
 
 from moviepy.video.io.VideoFileClip import VideoFileClip
@@ -22,3 +24,21 @@ def get_metadata(media_file):
     fps = round(video.fps)
 
     return duration, fps
+
+
+def get_session_from_cngt_file(filepath):
+    filepath = Path(filepath)
+    filename = filepath.stem
+
+    filename_split = filename.split('_')
+
+    return filename_split[0]
+
+
+def get_signer_from_cngt_file(filepath):
+    filepath = Path(filepath)
+    filename = filepath.stem
+
+    filename_split = filename.split('_')
+
+    return filename_split[1]
