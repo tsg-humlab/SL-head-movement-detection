@@ -9,6 +9,12 @@ def get_n_frames(media_file):
     return int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
 
+def get_fps(media_file):
+    cap = cv2.VideoCapture(str(media_file))
+
+    return int(cap.get(cv2.CAP_PROP_FPS))
+
+
 def get_metadata(media_file):
     video = VideoFileClip(str(media_file))
 
