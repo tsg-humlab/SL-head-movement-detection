@@ -21,10 +21,6 @@ def main(frames_csv, keypoints_dir):
 
         process_array(keypoints_arr[row['start_frame']:row['end_frame']])
 
-        import cv2
-        cap = cv2.VideoCapture(str(media_path))
-        show_frame(cap, row['end_frame']-25)
-
         pass
 
     pass
