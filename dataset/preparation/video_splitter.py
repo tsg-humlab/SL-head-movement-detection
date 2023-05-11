@@ -25,7 +25,7 @@ def create_csv(overview_csv, output_csv):
             unique_id,
             media_path,
             75,
-            get_n_frames(media_path)
+            get_n_frames(media_path) - 25
         ])
 
     df_frames = pd.DataFrame(data, columns=['video_id', 'media_path', 'start_frame', 'end_frame'])
