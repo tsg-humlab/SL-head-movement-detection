@@ -45,3 +45,12 @@ def find_subject(keypoints, boxes):
     weighted_conf = (face_conf + bbox_conf) / 2
 
     return np.argmax(weighted_conf)
+
+
+def find_subject_video(keypoints, boxes):
+    face_conf = np.average(keypoints[:, :, :3, 2], axis=2)
+    bbox_conf = boxes[:, :, 4]
+    weighted_conf = (face_conf + bbox_conf) / 2
+
+    return weighted_conf.max(axis=1,keepdims=1) == weighted_conf
+    # return np.argmax(weighted_conf, axis=1)

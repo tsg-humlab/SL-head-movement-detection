@@ -67,6 +67,18 @@ class Video:
         self.signer_left = signer_left
         self.signer_right = signer_right
 
+    def __getitem__(self, signer_id):
+        matches = [self.signer_left.signer_id == signer_id, self.signer_right.signer_id == signer_id]
+
+        if matches[0] and matches[1]:
+            raise RuntimeError('Same signer detected twice in one video')
+        elif not matches[0] and not matches[1]:
+            raise KeyError(f'Signer {signer_id} not found in video')
+        elif matches[0]:
+            return self.signer_left
+        else:
+            return self.signer_right
+
     @classmethod
     def from_eaf(cls, ngt_id, eaf, fps=25):
         movement_parser = HeadMovementParser(fps=fps)
