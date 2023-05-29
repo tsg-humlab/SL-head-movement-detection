@@ -102,6 +102,8 @@ class Signer:
 
 class Annotation:
     def __init__(self, label, start, end):
+        assert start < end
+
         self.label = label
         self.start = start
         self.end = end
