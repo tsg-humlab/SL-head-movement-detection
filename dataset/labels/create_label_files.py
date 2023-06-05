@@ -36,9 +36,12 @@ def main(eaf_dir, output_dir, frames_path):
         if np.max(labels) != 1:
             df_overview.drop(df_overview[df_overview['media_path'] == str(path)].index, inplace=True)
         else:
-            np.save(output_dir / f'{ngt_id}_{signer_id}.npy', labels)
+            np.save(output_dir / f'{path.stem}.npy', labels)
 
-    df_overview['labels_path'] = df_overview['media_path'].str.replace('_b_720', '').replace('.mp4', '.npy')
+    def transform_path(filepath, directory=output_dir, suffix='.npy'):
+        return directory / Path(filepath).with_suffix(suffix).name
+
+    df_overview['labels_path'] = df_overview['media_path'].apply(transform_path)
     df_overview.to_csv(frames_path, index=False)
 
 
