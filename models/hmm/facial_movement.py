@@ -11,17 +11,7 @@ from utils.array_manipulation import find_subject_video
 from utils.media import get_session_from_cngt_file, get_signer_from_cngt_file
 
 
-def compute_hmm_vectors(frames_csv):
-    df_frames = pd.read_csv(frames_csv)
-
-    shake_sequences = []
-    other_sequences = []
-
-    for i, row in df_frames.iterrows():
-        pass
-
-
-def process_dataset(frames_csv, results_dir, threshold=4):
+def compute_hmm_vectors(frames_csv, results_dir, threshold=4):
     df_frames = pd.read_csv(frames_csv)
     movement_list = []
 
@@ -44,9 +34,7 @@ def process_dataset(frames_csv, results_dir, threshold=4):
 
         pass
 
-    hmm_vector_statistics(movement_list, threshold)
-
-    pass
+    return movement_list
 
 
 def hmm_vector_statistics(vectors, threshold):
@@ -146,4 +134,4 @@ if __name__ == '__main__':
     parser.add_argument('results_dir', type=Path)
     args = parser.parse_args()
 
-    process_dataset(args.frames_csv, args.results_dir)
+    compute_hmm_vectors(args.frames_csv, args.results_dir)

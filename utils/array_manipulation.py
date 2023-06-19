@@ -54,3 +54,15 @@ def find_subject_video(keypoints, boxes):
 
     return weighted_conf.max(axis=1,keepdims=1) == weighted_conf
     # return np.argmax(weighted_conf, axis=1)
+
+
+def get_uninterrupted_ones(array):
+    """Credit to Psidom
+    https://stackoverflow.com/questions/54446907/how-to-calculate-numbers-of-uninterrupted-repeats-in-an-array-in-python
+
+    :param array:
+    :return:
+    """
+    d = np.diff(np.pad(array, pad_width=1, mode='constant'))
+
+    return np.flatnonzero(d == -1) - np.flatnonzero(d == 1)
