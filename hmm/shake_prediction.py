@@ -7,7 +7,7 @@ import pandas as pd
 def main(frames_csv):
     df_frames = pd.read_csv(frames_csv)
 
-    
+
 
     for _, row in df_frames.iterrows():
         pass
