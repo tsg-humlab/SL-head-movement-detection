@@ -23,11 +23,9 @@ def validate_fold(frames_csv, results_dir, fold='fold_1'):
     df_train = df_frames[df_frames['split'].str.contains('fold')].drop(df_val.index)
     assert len(df_val) > 0
 
-    detector = RuleBasedShakeDetector(0.1, movement_threshold=0.1)
+    detector = RuleBasedShakeDetector(0.1, movement_threshold=0.5)
     detector.fit(df_train, results_dir)
     detector.plot_hmm_distributions()
-
-    pass
 
 
 def validate_untrained(frames_csv):

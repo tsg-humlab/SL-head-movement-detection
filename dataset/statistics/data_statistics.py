@@ -1,3 +1,8 @@
+import pickle
+from collections import Counter
+from concurrent.futures import ProcessPoolExecutor
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
@@ -6,12 +11,6 @@ from tqdm import tqdm
 
 from pose.pose_face_detection_old import TierDetector, find_eaf_and_videos, EAF_DIR, find_speaker_id
 from utils.exceptions import EAFParsingError
-
-from concurrent.futures import ProcessPoolExecutor
-
-import pickle
-from collections import Counter
-from pathlib import Path
 
 
 def find_videos(file):

@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from matplotlib import pyplot as plt, ticker
+from matplotlib import pyplot as plt
 
 from models.hmm import HMM_DECODER
 from pose import BOXES, KEYPOINTS
@@ -12,7 +12,7 @@ from utils.array_manipulation import find_subject_video
 from utils.media import get_session_from_cngt_file, get_signer_from_cngt_file
 
 
-def compute_hmm_vectors(frames_csv, results_dir, threshold=4):
+def compute_hmm_vectors(frames_csv, results_dir, threshold):
     if type(frames_csv) == str:
         df_frames = pd.read_csv(frames_csv)
     else:
@@ -55,15 +55,33 @@ def hmm_vector_statistics(vectors, threshold):
     plt.xticks(labels, [HMM_DECODER[label] for label in labels])
     plt.show()
 
-    pass
 
-
-def calc_pitch_yaw_roll(keypoints, boxes):
+def _focus_keypoints(keypoints, boxes):
     indices = find_subject_video(keypoints, boxes)
     keypoints = keypoints[indices]
 
+    return keypoints
+
+
+def calc_pitch_yaw(keypoints, boxes):
+    keypoints = _focus_keypoints(keypoints, boxes)
+
+    pitch, yaw = _pitch_yaw_internal(keypoints)
+
+    return pitch, yaw
+
+
+def _pitch_yaw_internal(keypoints):
     pitch = np.diff(keypoints[:, 0, 1])  # positive = to the bottom
     yaw = np.diff(keypoints[:, 0, 0])  # positive = to the right
+
+    return pitch, yaw
+
+
+def calc_pitch_yaw_roll(keypoints, boxes):
+    keypoints = _focus_keypoints(keypoints, boxes)
+
+    pitch, yaw = _pitch_yaw_internal(keypoints)
     roll = np.arctan((keypoints[:, 1, 0] - keypoints[:, 1, 1]) / (keypoints[:, 2, 0] - keypoints[:, 2, 1]))
 
     return pitch, yaw, roll
@@ -79,7 +97,7 @@ def compute_average_positions(keypoints, boxes):
     return average_x, average_y
 
 
-def compute_movement_vector(pitch, yaw, threshold=0.4):
+def compute_movement_vector(pitch, yaw, threshold):
     result = np.argmax(
         np.absolute(
             np.vstack((pitch, yaw, np.full(pitch.shape, threshold)))
@@ -128,5 +146,4 @@ if __name__ == '__main__':
     parser.add_argument('results_dir', type=Path)
     args = parser.parse_args()
 
-    vectors = compute_hmm_vectors(args.frames_csv, args.results_dir, threshold=1)
-    hmm_vector_statistics(vectors, threshold=1)
+    hmm_vector_statistics(compute_hmm_vectors(args.frames_csv, args.results_dir, threshold=1), threshold=1)

@@ -1,10 +1,9 @@
 import os
-from pathlib import Path
 
 import pandas as pd
 
-from utils.config import Config
 from dataset.labels import eaf_parser
+from utils.config import Config
 
 
 def main():

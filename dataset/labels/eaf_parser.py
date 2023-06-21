@@ -1,7 +1,7 @@
 import os
+import re
 from glob import glob
 from pathlib import Path
-import re
 
 from pympi.Elan import Eaf
 

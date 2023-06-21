@@ -1,9 +1,9 @@
 import os
+from glob import glob
 from pathlib import Path
 
-from cv2 import cv2
-from glob import glob
 import numpy as np
+from cv2 import cv2
 
 from utils.file_processing import ambiguous_to_numpy
 

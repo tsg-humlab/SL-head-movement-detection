@@ -1,9 +1,9 @@
 import argparse
+import random
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import random
 
 from utils.array_manipulation import get_uninterrupted_ones
 

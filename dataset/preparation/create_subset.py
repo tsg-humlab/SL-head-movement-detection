@@ -1,6 +1,6 @@
-import pandas as pd
 import shutil
 
+import pandas as pd
 from tqdm import tqdm
 
 from utils.config import Config

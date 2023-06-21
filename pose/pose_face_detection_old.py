@@ -9,8 +9,8 @@ import numpy as np
 from pympi.Elan import Eaf
 
 from pose.mp_detector import MediaPipePoseDetector
-from utils.exceptions import EAFParsingError
 from utils.config import Config
+from utils.exceptions import EAFParsingError
 
 EAF_DIR = Path(r'E:\CorpusNGT\EAF_export_HeadMov')
 MEDIA_DIR = Path(r'E:\CorpusNGT\CNGT 720p')
