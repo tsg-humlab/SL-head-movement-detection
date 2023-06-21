@@ -6,13 +6,17 @@ import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt, ticker
 
+from models.hmm import HMM_DECODER
 from pose import BOXES, KEYPOINTS
 from utils.array_manipulation import find_subject_video
 from utils.media import get_session_from_cngt_file, get_signer_from_cngt_file
 
 
 def compute_hmm_vectors(frames_csv, results_dir, threshold=4):
-    df_frames = pd.read_csv(frames_csv)
+    if type(frames_csv) == str:
+        df_frames = pd.read_csv(frames_csv)
+    else:
+        df_frames = frames_csv
     movement_list = []
 
     for i, row in df_frames.iterrows():
@@ -32,8 +36,6 @@ def compute_hmm_vectors(frames_csv, results_dir, threshold=4):
 
         movement_list.append(compute_movement_vector(pitch, yaw, threshold=threshold))
 
-        pass
-
     return movement_list
 
 
@@ -41,14 +43,6 @@ def hmm_vector_statistics(vectors, threshold):
     vectors = np.concatenate(vectors)
 
     labels, counts = np.unique(vectors, return_counts=True)
-
-    label_decoder = {
-        0: 'no movement',
-        1: 'left',
-        2: 'right',
-        3: 'up',
-        4: 'down'
-    }
 
     sns.set_theme()
     sns.set_style('whitegrid')
@@ -58,7 +52,7 @@ def hmm_vector_statistics(vectors, threshold):
     plt.title(f'Movement occurrences in HMM vectors (threshold={threshold})', fontsize=15)
     ax.bar(labels, counts)
     ax.set_yticklabels(['{:,}'.format(int(x)) for x in ax.get_yticks().tolist()])
-    plt.xticks(labels, [label_decoder[label] for label in labels])
+    plt.xticks(labels, [HMM_DECODER[label] for label in labels])
     plt.show()
 
     pass
@@ -91,10 +85,10 @@ def compute_movement_vector(pitch, yaw, threshold=0.4):
             np.vstack((pitch, yaw, np.full(pitch.shape, threshold)))
         ), axis=0)
 
-    pitch[pitch >= 0] = 2  # right
-    pitch[pitch < 0] = 1  # left
-    yaw[yaw >= 0] = 4  # down
-    yaw[yaw < 0] = 3  # up
+    pitch[pitch >= 0] = 2  # down
+    pitch[pitch < 0] = 1  # up
+    yaw[yaw >= 0] = 4  # right
+    yaw[yaw < 0] = 3  # left
     lookup_table = np.vstack((pitch, yaw, np.full(pitch.shape, 0))).astype(int)
 
     movement = np.zeros(pitch.shape).astype(int)
@@ -134,4 +128,5 @@ if __name__ == '__main__':
     parser.add_argument('results_dir', type=Path)
     args = parser.parse_args()
 
-    compute_hmm_vectors(args.frames_csv, args.results_dir)
+    vectors = compute_hmm_vectors(args.frames_csv, args.results_dir, threshold=1)
+    hmm_vector_statistics(vectors, threshold=1)
