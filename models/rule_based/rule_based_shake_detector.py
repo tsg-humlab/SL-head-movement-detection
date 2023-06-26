@@ -7,11 +7,16 @@ from models.hmm.facial_movement import compute_hmm_vectors
 
 
 class RuleBasedShakeDetector:
-    def __init__(self, deviance_threshold, movement_threshold):
+    def __init__(self, window_size, deviance_threshold, movement_threshold):
         assert (0 <= deviance_threshold)
         assert (deviance_threshold <= 1)
         self.deviance_threshold = deviance_threshold
         self.movement_threshold = movement_threshold
+
+        window_size = abs(int(window_size))
+        if window_size % 2 == 0:
+            window_size += 1
+        self.window_size = max(window_size, 3)
 
         self.shakes_counts = {}
         self.background_counts = {}
@@ -46,6 +51,29 @@ class RuleBasedShakeDetector:
         values, counts = np.unique(background, return_counts=True)
         for i in range(len(values)):
             self.background_counts[HMM_DECODER[values[i]]] = counts[i] / len(background)
+
+    def predict(self, sequence):
+        pred_len = len(sequence) - self.window_size + 1
+        result = np.zeros(pred_len)
+
+        for i in range(pred_len):
+            window = sequence[i:i + self.window_size]
+            values, counts = np.unique(window, return_counts=True)
+
+            shake_diff = 0
+            bg_diff = 0
+
+            for j in range(len(values)):
+                label = HMM_DECODER[values[j]]
+                ratio = counts[j] / self.window_size
+
+                shake_diff += abs(self.shakes_counts[label] - ratio)
+                bg_diff += abs(self.background_counts[label] - ratio)
+
+            if shake_diff < bg_diff:
+                result[i] = 1
+
+        return result
 
     def plot_hmm_distributions(self):
         sns.set_theme()
