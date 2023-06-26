@@ -7,10 +7,7 @@ from models.hmm.facial_movement import compute_hmm_vectors
 
 
 class RuleBasedShakeDetector:
-    def __init__(self, window_size, deviance_threshold, movement_threshold):
-        assert (0 <= deviance_threshold)
-        assert (deviance_threshold <= 1)
-        self.deviance_threshold = deviance_threshold
+    def __init__(self, window_size, movement_threshold):
         self.movement_threshold = movement_threshold
 
         window_size = abs(int(window_size))
