@@ -40,10 +40,6 @@ def compute_hmm_vectors(frames_csv, threshold):
     movement_list = []
 
     for i, row in df_frames.iterrows():
-        media_path = Path(row['media_path'])
-        session_id = get_session_from_cngt_file(media_path)
-        signer_id = get_signer_from_cngt_file(media_path)
-
         keypoints_arr = np.load(row['keypoints_path'])
         boxes_arr = np.load(row['boxes_path'])
 
