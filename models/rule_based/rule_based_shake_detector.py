@@ -21,11 +21,11 @@ class RuleBasedShakeDetector:
         self.shakes_counts = {}
         self.background_counts = {}
 
-    def __load_data(self, df_data, pose_dir, threshold):
-        self.data = compute_hmm_vectors(df_data, pose_dir, threshold=threshold)
+    def __load_data(self, df_data, threshold):
+        self.data = compute_hmm_vectors(df_data, threshold=threshold)
 
-    def fit(self, df_data, pose_dir):
-        self.__load_data(df_data, pose_dir, self.movement_threshold)
+    def fit(self, df_data):
+        self.__load_data(df_data, self.movement_threshold)
 
         shake_list = []
         background_list = []

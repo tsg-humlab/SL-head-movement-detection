@@ -12,7 +12,27 @@ from utils.array_manipulation import find_subject_video
 from utils.media import get_session_from_cngt_file, get_signer_from_cngt_file
 
 
-def compute_hmm_vectors(frames_csv, results_dir, threshold):
+def create_pose_csv(frames_csv, results_csv, pose_dir):
+    df_frames = pd.read_csv(frames_csv)
+
+    keypoints = []
+    boxes = []
+
+    for _, row in df_frames.iterrows():
+        media_path = Path(row['media_path'])
+        session_id = get_session_from_cngt_file(media_path)
+        signer_id = get_signer_from_cngt_file(media_path)
+
+        keypoints.append(pose_dir / KEYPOINTS / f'{session_id}_{signer_id}.npy')
+        boxes.append(pose_dir / BOXES / f'{session_id}_{signer_id}.npy')
+
+    df_frames['keypoints_path'] = keypoints
+    df_frames['boxes_path'] = boxes
+
+    df_frames.to_csv(results_csv, index=False)
+
+
+def compute_hmm_vectors(frames_csv, threshold):
     if type(frames_csv) == str:
         df_frames = pd.read_csv(frames_csv)
     else:
@@ -24,10 +44,8 @@ def compute_hmm_vectors(frames_csv, results_dir, threshold):
         session_id = get_session_from_cngt_file(media_path)
         signer_id = get_signer_from_cngt_file(media_path)
 
-        keypoints_path = results_dir / KEYPOINTS / f'{session_id}_{signer_id}.npy'
-        boxes_path = results_dir / BOXES / f'{session_id}_{signer_id}.npy'
-        keypoints_arr = np.load(keypoints_path)
-        boxes_arr = np.load(boxes_path)
+        keypoints_arr = np.load(row['keypoints_path'])
+        boxes_arr = np.load(row['boxes_path'])
 
         pitch, yaw, _ = calc_pitch_yaw_roll(
             keypoints_arr[row['start_frame']:row['end_frame']],
@@ -143,7 +161,8 @@ def plot_positions(positions_x, positions_y, n_bins=20):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('frames_csv', type=Path)
+    parser.add_argument('results_csv', type=Path)
     parser.add_argument('results_dir', type=Path)
     args = parser.parse_args()
 
-    hmm_vector_statistics(compute_hmm_vectors(args.frames_csv, args.results_dir, threshold=1), threshold=1)
+    create_pose_csv(args.frames_csv, args.results_csv, args.results_dir)
