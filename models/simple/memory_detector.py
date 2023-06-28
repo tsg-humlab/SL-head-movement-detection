@@ -3,24 +3,15 @@ import numpy as np
 import seaborn as sns
 
 from models.hmm import HMM_DECODER
-from models.hmm.facial_movement import compute_hmm_vectors
+from models.simple.detector import ShakeDetector
 
 
-class RuleBasedShakeDetector:
+class MemoryBasedShakeDetector(ShakeDetector):
     def __init__(self, window_size, movement_threshold):
-        self.movement_threshold = movement_threshold
-
-        window_size = abs(int(window_size))
-        if window_size % 2 == 0:
-            window_size += 1
-        self.window_size = max(window_size, 3)
+        super().__init__(window_size, movement_threshold)
 
         self.shakes_counts = {}
         self.background_counts = {}
-        self.data = None
-
-    def __load_data(self, df_data, threshold):
-        self.data = compute_hmm_vectors(df_data, threshold=threshold)
 
     def fit(self, df_data, data=None):
         if data:
@@ -76,7 +67,7 @@ class RuleBasedShakeDetector:
 
         return result
 
-    def plot_hmm_distributions(self):
+    def plot_memory_distributions(self):
         sns.set_theme()
         sns.set_style('whitegrid')
         sns.set_context('paper')

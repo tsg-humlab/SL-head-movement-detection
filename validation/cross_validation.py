@@ -6,11 +6,46 @@ from matplotlib import pyplot as plt
 from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
 
 from models.hmm.facial_movement import compute_hmm_vectors
-from models.rule_based.rule_based_shake_detector import RuleBasedShakeDetector
+from models.simple.memory_detector import MemoryBasedShakeDetector
+from models.simple.random_detector import RandomShakeDetector
+from models.simple.rule_detector import RuleBasedShakeDetector, majority_vote
 from utils.frames_csv import get_splits, load_df
 
 
-def cross_validate_hmm_preload(frames_csv, window_size=48, movement_threshold=0.5):
+def cross_validate_random_preload(frames_csv, window_size=48, movement_threshold=0.5):
+    df_frames = load_df(frames_csv)
+    vectors = compute_hmm_vectors(df_frames, threshold=movement_threshold)
+
+    matrix = cross_validate(
+        frames_csv,
+        data=vectors,
+        model_class=RandomShakeDetector,
+        params={
+            'window_size': window_size,
+            'movement_threshold': movement_threshold
+        }
+    )
+    plot_confusion_matrix(matrix)
+
+
+def cross_validate_rule_preload(frames_csv, window_size=48, movement_threshold=0.85):
+    df_frames = load_df(frames_csv)
+    vectors = compute_hmm_vectors(df_frames, threshold=movement_threshold)
+
+    matrix = cross_validate(
+        frames_csv,
+        data=vectors,
+        model_class=RuleBasedShakeDetector,
+        params={
+            'window_size': window_size,
+            'movement_threshold': movement_threshold,
+            'rule_func': majority_vote
+        }
+    )
+    plot_confusion_matrix(matrix)
+
+
+def cross_validate_memory_preload(frames_csv, window_size=48, movement_threshold=0.5):
     """Cross validation wrapper specifically designed for the rule based classifier using HMM vectors.
 
     :param frames_csv: Dataframe with frame annotations, labels and any other information used by your model
@@ -20,15 +55,16 @@ def cross_validate_hmm_preload(frames_csv, window_size=48, movement_threshold=0.
     df_frames = load_df(frames_csv)
     vectors = compute_hmm_vectors(df_frames, threshold=movement_threshold)
 
-    cross_validate(
+    matrix = cross_validate(
         frames_csv,
         data=vectors,
-        model_class=RuleBasedShakeDetector,
+        model_class=MemoryBasedShakeDetector,
         params={
             'window_size': window_size,
             'movement_threshold': movement_threshold
         }
     )
+    plot_confusion_matrix(matrix)
 
 
 def cross_validate(frames_csv, data, model_class, params):
@@ -46,6 +82,7 @@ def cross_validate(frames_csv, data, model_class, params):
     :param data: Collection of datapoints, the indices of these datapoints must correspond to the Dataframe
     :param model_class: Reference to the model class to use
     :param params: Parameters for creating models
+    :return: Confusion matrix of the results
     """
     df_frames = load_df(frames_csv)
     splits = get_splits(df_frames)
@@ -55,11 +92,7 @@ def cross_validate(frames_csv, data, model_class, params):
         model = model_class(**params)
         matrix = matrix + validate_fold(frames_csv=df_frames, model=model, fold=fold, data=data)
 
-    disp = ConfusionMatrixDisplay(matrix, display_labels=['background', 'head-shake'])
-
-    disp.plot()
-    plt.subplots_adjust(left=0.25)
-    plt.show()
+    return matrix
 
 
 def validate_fold(frames_csv, model, data, fold, classes=None):
@@ -105,9 +138,17 @@ def validate_fold(frames_csv, model, data, fold, classes=None):
     return confusion_matrix(labels, preds, labels=classes)
 
 
+def plot_confusion_matrix(matrix):
+    disp = ConfusionMatrixDisplay(matrix, display_labels=['background', 'head-shake'])
+
+    disp.plot()
+    plt.subplots_adjust(left=0.25)
+    plt.show()
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('frames_csv', type=Path)
     args = parser.parse_args()
 
-    cross_validate_hmm_preload(args.frames_csv)
+    cross_validate_random_preload(args.frames_csv)
