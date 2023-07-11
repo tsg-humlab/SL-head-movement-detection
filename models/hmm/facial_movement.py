@@ -32,7 +32,7 @@ def create_pose_csv(frames_csv, results_csv, pose_dir):
     df_frames.to_csv(results_csv, index=False)
 
 
-def compute_hmm_vectors(frames_csv, threshold):
+def ordinal_from_csv(frames_csv, threshold):
     if type(frames_csv) == str:
         df_frames = pd.read_csv(frames_csv)
     else:
@@ -48,7 +48,28 @@ def compute_hmm_vectors(frames_csv, threshold):
             boxes_arr[row['start_frame']:row['end_frame']]
         )
 
-        movement_list.append(compute_movement_vector(pitch, yaw, threshold=threshold))
+        movement_list.append(compute_ordinal_vectors(pitch, yaw, threshold=threshold))
+
+    return movement_list
+
+
+def derivatives_from_csv(frames_csv):
+    if type(frames_csv) == str:
+        df_frames = pd.read_csv(frames_csv)
+    else:
+        df_frames = frames_csv
+    movement_list = []
+
+    for i, row in df_frames.iterrows():
+        keypoints_arr = np.load(row['keypoints_path'])
+        boxes_arr = np.load(row['boxes_path'])
+
+        pitch, yaw, roll = calc_pitch_yaw_roll(
+            keypoints_arr[row['start_frame']:row['end_frame']],
+            boxes_arr[row['start_frame']:row['end_frame']]
+        )
+
+        movement_list.append(np.stack([pitch, yaw, roll[1:]], axis=1))
 
     return movement_list
 
@@ -111,7 +132,7 @@ def compute_average_positions(keypoints, boxes):
     return average_x, average_y
 
 
-def compute_movement_vector(pitch, yaw, threshold):
+def compute_ordinal_vectors(pitch, yaw, threshold):
     result = np.argmax(
         np.absolute(
             np.vstack((pitch, yaw, np.full(pitch.shape, threshold)))

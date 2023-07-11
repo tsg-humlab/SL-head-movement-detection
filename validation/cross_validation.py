@@ -5,16 +5,40 @@ import numpy as np
 from matplotlib import pyplot as plt
 from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
 
-from models.hmm.facial_movement import compute_hmm_vectors
+from models.hmm.facial_movement import ordinal_from_csv, derivatives_from_csv
 from models.simple.memory_detector import MemoryBasedShakeDetector
 from models.simple.random_detector import RandomShakeDetector
 from models.simple.rule_detector import RuleBasedShakeDetector, majority_vote
 from utils.frames_csv import get_splits, load_df
 
+import torch
+from pomegranate.distributions import Normal
+from pomegranate.hmm import DenseHMM
+from sklearn.preprocessing import OneHotEncoder
+
+
+def cross_validate_hmm(frames_csv, window_size=48):
+    df_frames = load_df(frames_csv)
+    vectors = derivatives_from_csv(df_frames)
+    encodings = [np.expand_dims(vector, axis=0) for vector in vectors]
+    tensors = [torch.tensor(encoding) for encoding in encodings]
+    splits = get_splits(df_frames)
+
+    model = DenseHMM([Normal(), Normal(), Normal()], max_iter=100, verbose=True)
+    model.fit(tensors)
+
+    return
+
+    for fold in splits:
+        model = model_class(**params)
+        matrix = matrix + validate_fold(frames_csv=df_frames, model=model, fold=fold, data=data)
+
+    return matrix
+
 
 def cross_validate_random_preload(frames_csv, window_size=48, movement_threshold=0.5):
     df_frames = load_df(frames_csv)
-    vectors = compute_hmm_vectors(df_frames, threshold=movement_threshold)
+    vectors = ordinal_from_csv(df_frames, threshold=movement_threshold)
 
     matrix = cross_validate(
         frames_csv,
@@ -31,7 +55,7 @@ def cross_validate_random_preload(frames_csv, window_size=48, movement_threshold
 
 def cross_validate_rule_preload(frames_csv, window_size=48, movement_threshold=0.5):
     df_frames = load_df(frames_csv)
-    vectors = compute_hmm_vectors(df_frames, threshold=movement_threshold)
+    vectors = ordinal_from_csv(df_frames, threshold=movement_threshold)
 
     matrix = cross_validate(
         frames_csv,
@@ -55,7 +79,7 @@ def cross_validate_memory_preload(frames_csv, window_size=48, movement_threshold
     :param movement_threshold: Movement threshold in pixels to determine when a person is considered to move
     """
     df_frames = load_df(frames_csv)
-    vectors = compute_hmm_vectors(df_frames, threshold=movement_threshold)
+    vectors = ordinal_from_csv(df_frames, threshold=movement_threshold)
 
     matrix = cross_validate(
         frames_csv,
@@ -157,6 +181,6 @@ if __name__ == '__main__':
     parser.add_argument('frames_csv', type=Path)
     args = parser.parse_args()
 
-    cross_validate_rule_preload(args.frames_csv,
-                                window_size=48,
-                                movement_threshold=2)
+    cross_validate_hmm(args.frames_csv,
+                       window_size=48,
+                       )

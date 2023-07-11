@@ -1,6 +1,6 @@
 import abc
 
-from models.hmm.facial_movement import compute_hmm_vectors
+from models.hmm.facial_movement import ordinal_from_csv
 
 
 class ShakeDetector:
@@ -15,7 +15,7 @@ class ShakeDetector:
         self.data = None
 
     def __load_data(self, df_data, threshold):
-        self.data = compute_hmm_vectors(df_data, threshold=threshold)
+        self.data = ordinal_from_csv(df_data, threshold=threshold)
 
     def fit(self, *args, **kwargs):
         """Detectors that don't need to fit any parameters to the training data can keep this method as-is. This way
