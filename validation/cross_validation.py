@@ -25,10 +25,11 @@ def cross_validate_random_preload(frames_csv, window_size=48, movement_threshold
             'movement_threshold': movement_threshold
         }
     )
-    plot_confusion_matrix(matrix)
+    plot_confusion_matrix(matrix,
+                          title='Confusion matrix for random classifier')
 
 
-def cross_validate_rule_preload(frames_csv, window_size=48, movement_threshold=0.85):
+def cross_validate_rule_preload(frames_csv, window_size=48, movement_threshold=0.5):
     df_frames = load_df(frames_csv)
     vectors = compute_hmm_vectors(df_frames, threshold=movement_threshold)
 
@@ -42,7 +43,8 @@ def cross_validate_rule_preload(frames_csv, window_size=48, movement_threshold=0
             'rule_func': majority_vote
         }
     )
-    plot_confusion_matrix(matrix)
+    plot_confusion_matrix(matrix,
+                          title=f'Confusion matrix for rule-based classifier with threshold={movement_threshold}')
 
 
 def cross_validate_memory_preload(frames_csv, window_size=48, movement_threshold=0.5):
@@ -64,7 +66,8 @@ def cross_validate_memory_preload(frames_csv, window_size=48, movement_threshold
             'movement_threshold': movement_threshold
         }
     )
-    plot_confusion_matrix(matrix)
+    plot_confusion_matrix(matrix,
+                          title=f'Confusion matrix for memory-based classifier with threshold={movement_threshold}')
 
 
 def cross_validate(frames_csv, data, model_class, params):
@@ -138,11 +141,14 @@ def validate_fold(frames_csv, model, data, fold, classes=None):
     return confusion_matrix(labels, preds, labels=classes)
 
 
-def plot_confusion_matrix(matrix):
+def plot_confusion_matrix(matrix, title=None):
     disp = ConfusionMatrixDisplay(matrix, display_labels=['background', 'head-shake'])
 
     disp.plot()
     plt.subplots_adjust(left=0.25)
+    if title:
+        plt.title(title, fontsize=15)
+        plt.tight_layout()
     plt.show()
 
 
@@ -151,4 +157,6 @@ if __name__ == '__main__':
     parser.add_argument('frames_csv', type=Path)
     args = parser.parse_args()
 
-    cross_validate_random_preload(args.frames_csv)
+    cross_validate_rule_preload(args.frames_csv,
+                                window_size=48,
+                                movement_threshold=2)
