@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 
@@ -9,6 +10,16 @@ def get_splits(df_frames):
 
 def get_n_splits(df_frames):
     return len(get_splits(df_frames))
+
+
+def load_all_labels(df_frames, shift=0):
+    return list(df_frames.apply(
+        lambda x: load_label(x['labels_path'], int(x['start_frame']), int(x['end_frame']), shift=shift), axis=1)
+    )
+
+
+def load_label(path, start, end, shift=0):
+    return np.load(path)[start + shift:end]
 
 
 def load_df(frames_csv):

@@ -66,3 +66,7 @@ def get_uninterrupted_ones(array):
     d = np.diff(np.pad(array, pad_width=1, mode='constant'))
 
     return np.flatnonzero(d == -1) - np.flatnonzero(d == 1)
+
+
+def get_change_indices(array):
+    return np.where(array[1:] != array[:-1])[0] + 1
