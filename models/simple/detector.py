@@ -7,10 +7,7 @@ class ShakeDetector:
     def __init__(self, window_size, movement_threshold):
         self.movement_threshold = movement_threshold
 
-        window_size = abs(int(window_size))
-        if window_size % 2 == 0:
-            window_size += 1
-        self.window_size = max(window_size, 3)
+        self.window_size = verify_window_size(window_size)
 
         self.data = None
 
@@ -32,3 +29,11 @@ class ShakeDetector:
         :return: Numpy array of zeros with ones for shake annotations
         """
         return
+
+
+def verify_window_size(size):
+    size = abs(int(size))
+    if size % 2 == 0:
+        size += 1
+
+    return max(size, 3)

@@ -12,9 +12,18 @@ def get_n_splits(df_frames):
     return len(get_splits(df_frames))
 
 
-def load_all_labels(df_frames, shift=0):
+def load_all_labels(df_frames, shift=0, window=None):
+    if window:
+        cut = int((window - 1) / 2)
+    else:
+        cut = 0
+
     return list(df_frames.apply(
-        lambda x: load_label(x['labels_path'], int(x['start_frame']), int(x['end_frame']), shift=shift), axis=1)
+        lambda x: load_label(x['labels_path'],
+                             int(x['start_frame']) + cut,
+                             int(x['end_frame']) - cut,
+                             shift=shift),
+        axis=1)
     )
 
 

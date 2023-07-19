@@ -6,6 +6,8 @@ from matplotlib import pyplot as plt
 from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
 
 from models.hmm.facial_movement import ordinal_from_csv, derivatives_from_csv
+from models.hmm.test_hmm import validate_hmm
+from models.hmm.train_hmm import fit_hmms
 from models.simple.memory_detector import MemoryBasedShakeDetector
 from models.simple.random_detector import RandomShakeDetector
 from models.simple.rule_detector import RuleBasedShakeDetector, majority_vote
@@ -16,24 +18,36 @@ from pomegranate.distributions import Normal
 from pomegranate.hmm import DenseHMM
 from sklearn.preprocessing import OneHotEncoder
 
+from utils.io import mkdir_if_not_exists
 
-def cross_validate_hmm(frames_csv, window_size=48):
+
+def validate_hmm_folds(frames_csv, folds_dir, window_size=48):
+    print(f'Loading samples from {frames_csv}')
     df_frames = load_df(frames_csv)
-    vectors = derivatives_from_csv(df_frames)
-    encodings = [np.expand_dims(vector, axis=0) for vector in vectors]
-    tensors = [torch.tensor(encoding) for encoding in encodings]
     splits = get_splits(df_frames)
 
-    model = DenseHMM([Normal(), Normal(), Normal()], max_iter=100, verbose=True)
-    model.fit(tensors)
-
-    return
+    matrix = np.zeros((2, 2))
 
     for fold in splits:
-        model = model_class(**params)
-        matrix = matrix + validate_fold(frames_csv=df_frames, model=model, fold=fold, data=data)
+        print(f'Validating {fold}/{len(splits)}')
+        df_val = df_frames[df_frames['split'] == fold]
 
-    return matrix
+        matrix = matrix + validate_hmm(df_val, folds_dir / fold, window_size=window_size)
+
+    plot_confusion_matrix(matrix, title='Cross validation of HMM approach')
+
+
+def fit_hmm_folds(frames_csv, folds_dir):
+    df_frames = load_df(frames_csv)
+    splits = get_splits(df_frames)
+
+    for fold in splits:
+        mkdir_if_not_exists(folds_dir / fold)
+
+        df_val = df_frames[df_frames['split'] == fold]
+        df_train = df_frames[df_frames['split'].str.contains('fold')].drop(df_val.index)
+
+        fit_hmms(df_train, folds_dir / fold)
 
 
 def cross_validate_random_preload(frames_csv, window_size=48, movement_threshold=0.5):
@@ -171,16 +185,41 @@ def plot_confusion_matrix(matrix, title=None):
     disp.plot()
     plt.subplots_adjust(left=0.25)
     if title:
-        plt.title(title, fontsize=15)
-        plt.tight_layout()
+        plt.title(title, fontsize=12, y=1.1)
     plt.show()
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('frames_csv', type=Path)
+    parser.add_argument('-w', '--window_size', default=48, type=int)
+    parser.add_argument('-t', '--movement_threshold', default=0.5, type=float)
+    subparsers = parser.add_subparsers(dest='subparser')
+
+    hmm_parser = subparsers.add_parser('hmm')
+    hmm_parser.add_argument('folds_dir', type=Path)
+
+    memory_parser = subparsers.add_parser('memory')
+    rule_parser = subparsers.add_parser('rule')
+    random_parser = subparsers.add_parser('random')
+
     args = parser.parse_args()
 
-    cross_validate_hmm(args.frames_csv,
-                       window_size=48,
-                       )
+    if args.subparser == 'hmm':
+        validate_hmm_folds(args.frames_csv,
+                           args.folds_dir,
+                           window_size=args.window_size)
+    elif args.subparser == 'memory':
+        cross_validate_memory_preload(args.frames_csv,
+                                      window_size=args.window_size,
+                                      movement_threshold=args.movement_threshold)
+    elif args.subparser == 'rule':
+        cross_validate_rule_preload(args.frames_csv,
+                                    window_size=args.window_size,
+                                    movement_threshold=args.movement_threshold)
+    elif args.subparser == 'random':
+        cross_validate_random_preload(args.frames_csv,
+                                      window_size=args.window_size,
+                                      movement_threshold=args.movement_threshold)
+    else:
+        raise RuntimeError('Please choose a subcommand')

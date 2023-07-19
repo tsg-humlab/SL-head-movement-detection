@@ -1,4 +1,10 @@
 import json
+import os
+
+
+def mkdir_if_not_exists(path):
+    if not os.path.exists(path):
+        os.mkdir(path)
 
 
 def write_json(data, path):
