@@ -3,6 +3,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from models.simple.detector import verify_window_size
+
 
 def get_splits(df_frames):
     return sorted(set(df_frames[df_frames['split'].str.contains('fold')]['split']))
@@ -14,6 +16,8 @@ def get_n_splits(df_frames):
 
 def load_all_labels(df_frames, shift=0, window=None):
     if window:
+        window = verify_window_size(window)
+
         cut = int((window - 1) / 2)
     else:
         cut = 0

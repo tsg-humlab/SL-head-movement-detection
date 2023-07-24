@@ -11,7 +11,7 @@ from models.simple.detector import verify_window_size
 from utils.frames_csv import load_df, load_all_labels
 
 
-def validate_hmm(frames_csv, models_dir, window_size=48):
+def predict_hmm(frames_csv, models_dir, window_size=48):
     window_size = verify_window_size(window_size)
 
     df_frames = load_df(frames_csv)
@@ -39,7 +39,7 @@ def validate_hmm(frames_csv, models_dir, window_size=48):
 
         predictions.append(np.argmax(log_probs, axis=0))
 
-    return confusion_matrix(np.concatenate(labels), np.concatenate(predictions), labels=[0, 1])
+    return labels, predictions
 
 
 if __name__ == '__main__':
@@ -49,4 +49,4 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--overwrite', action='store_true')
     args = parser.parse_args()
 
-    validate_hmm(args.frames_csv, args.models_dir)
+    predict_hmm(args.frames_csv, args.models_dir)

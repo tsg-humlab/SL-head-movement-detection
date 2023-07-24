@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import seaborn as sns
 
 
 def draw_opaque_box(image, bbox, alpha=0.5, gamma=0):
@@ -23,3 +24,9 @@ def draw_opaque_box(image, bbox, alpha=0.5, gamma=0):
 
     res = cv2.addWeighted(sub_img, alpha, green_rect, beta, gamma)
     image[y1:y2, x1:x2] = res
+
+
+def set_seaborn_theme():
+    sns.set_theme()
+    sns.set_style('whitegrid')
+    sns.set_context('paper')

@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
 
 from models.hmm.facial_movement import ordinal_from_csv, derivatives_from_csv
-from models.hmm.test_hmm import validate_hmm
+from models.hmm.test_hmm import predict_hmm
 from models.hmm.train_hmm import fit_hmms
 from models.simple.memory_detector import MemoryBasedShakeDetector
 from models.simple.random_detector import RandomShakeDetector
@@ -21,10 +21,11 @@ from sklearn.preprocessing import OneHotEncoder
 from utils.io import mkdir_if_not_exists
 
 
-def validate_hmm_folds(frames_csv, folds_dir, window_size=48):
+def validate_hmm_folds(frames_csv, folds_dir, window_size=48, results_dir=None):
     print(f'Loading samples from {frames_csv}')
     df_frames = load_df(frames_csv)
     splits = get_splits(df_frames)
+    all_predictions = []
 
     matrix = np.zeros((2, 2))
 
@@ -32,9 +33,16 @@ def validate_hmm_folds(frames_csv, folds_dir, window_size=48):
         print(f'Validating {fold}/{len(splits)}')
         df_val = df_frames[df_frames['split'] == fold]
 
-        matrix = matrix + validate_hmm(df_val, folds_dir / fold, window_size=window_size)
+        labels, predictions = predict_hmm(df_val, folds_dir / fold, window_size=window_size)
+        matrix = matrix + confusion_matrix(np.concatenate(labels), np.concatenate(predictions), labels=[0, 1])
+
+        if results_dir:
+            all_predictions.extend(predictions)
 
     plot_confusion_matrix(matrix, title='Cross validation of HMM approach')
+
+    if results_dir:
+        np.savez(results_dir/'predictions.npz', *all_predictions)
 
 
 def fit_hmm_folds(frames_csv, folds_dir):
@@ -198,6 +206,7 @@ if __name__ == '__main__':
 
     hmm_parser = subparsers.add_parser('hmm')
     hmm_parser.add_argument('folds_dir', type=Path)
+    hmm_parser.add_argument('-s', '--save_dir', type=Path)
 
     memory_parser = subparsers.add_parser('memory')
     rule_parser = subparsers.add_parser('rule')
@@ -208,7 +217,8 @@ if __name__ == '__main__':
     if args.subparser == 'hmm':
         validate_hmm_folds(args.frames_csv,
                            args.folds_dir,
-                           window_size=args.window_size)
+                           window_size=args.window_size,
+                           results_dir=args.save_dir)
     elif args.subparser == 'memory':
         cross_validate_memory_preload(args.frames_csv,
                                       window_size=args.window_size,
