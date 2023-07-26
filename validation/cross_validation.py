@@ -5,19 +5,13 @@ import numpy as np
 from matplotlib import pyplot as plt
 from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
 
-from models.hmm.facial_movement import ordinal_from_csv, derivatives_from_csv
+from models.hmm.facial_movement import ordinal_from_csv
 from models.hmm.test_hmm import predict_hmm
 from models.hmm.train_hmm import fit_hmms
 from models.simple.memory_detector import MemoryBasedShakeDetector
 from models.simple.random_detector import RandomShakeDetector
 from models.simple.rule_detector import RuleBasedShakeDetector, majority_vote
 from utils.frames_csv import get_splits, load_df
-
-import torch
-from pomegranate.distributions import Normal
-from pomegranate.hmm import DenseHMM
-from sklearn.preprocessing import OneHotEncoder
-
 from utils.io import mkdir_if_not_exists
 
 
