@@ -145,7 +145,7 @@ def review_case(keypoints_file, boxes_file, media_file):
     cv2.destroyAllWindows()
 
 
-def show_frame(capture, frame_i, target_bbox=None, title='CNGT frame'):
+def show_frame(capture, frame_i, target_bbox=None, title='CNGT frame', return_frame=False):
     """Show a specific frame from a capture using the frame index.
 
     The index starts at 0 and ends at N_frames - 1.
@@ -169,8 +169,12 @@ def show_frame(capture, frame_i, target_bbox=None, title='CNGT frame'):
     if target_bbox is not None:
         draw_opaque_box(frame, target_bbox, alpha=0.8)
 
-    cv2.imshow(title, frame)
-    return cv2.waitKey()
+    if return_frame:
+        return frame
+    else:
+        cv2.imshow(title, frame)
+
+        return cv2.waitKey()
 
 
 if __name__ == '__main__':

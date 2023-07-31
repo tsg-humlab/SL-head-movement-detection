@@ -124,13 +124,17 @@ def barcode_and_truth(sequence, labels):
     plt.show()
 
 
+def flips_indices(sequence):
+    return np.diff(sequence) != 0
+
+
 def flips(sequence):
     """Count the number of times the value in a time sequence changes from one step to the next.
 
     :param sequence: Numpy array with time data
     :return: Number of value changes over the sequence
     """
-    return (np.diff(sequence) != 0).sum()
+    return flips_indices(sequence).sum()
 
 
 if __name__ == '__main__':
