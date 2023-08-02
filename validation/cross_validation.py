@@ -202,6 +202,9 @@ if __name__ == '__main__':
     hmm_parser.add_argument('folds_dir', type=Path)
     hmm_parser.add_argument('-s', '--save_dir', type=Path)
 
+    hmm_fit_parser = subparsers.add_parser('hmm_fit')
+    hmm_fit_parser.add_argument('folds_dir', type=Path)
+
     memory_parser = subparsers.add_parser('memory')
     rule_parser = subparsers.add_parser('rule')
     random_parser = subparsers.add_parser('random')
@@ -213,6 +216,9 @@ if __name__ == '__main__':
                            args.folds_dir,
                            window_size=args.window_size,
                            results_dir=args.save_dir)
+    elif args.subparser == 'hmm_fit':
+        fit_hmm_folds(args.frames_csv,
+                      args.folds_dir)
     elif args.subparser == 'memory':
         cross_validate_memory_preload(args.frames_csv,
                                       window_size=args.window_size,

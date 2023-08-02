@@ -9,8 +9,11 @@ from dataset.labels.eaf_parser import Video
 from utils.media import get_n_frames
 
 
-def main(eaf_dir, output_dir, frames_path):
+def main(eaf_dir, output_dir, frames_path, position_csv=None):
     df_overview = pd.read_csv(frames_path)
+
+    if position_csv:
+        df_position = pd.read_csv(position_csv, index_col='video_id')
 
     paths = set(df_overview['media_path'])
 
@@ -50,6 +53,7 @@ if __name__ == '__main__':
     parser.add_argument('eaf_dir', metavar='eaf-dir', type=Path)
     parser.add_argument('output_dir', metavar='output-dir', type=Path)
     parser.add_argument('frames_path', metavar='frames-path', type=Path)
+    parser.add_argument('-p', '--position_csv', type=Path)
     args = parser.parse_args()
 
-    main(args.eaf_dir, args.output_dir, args.frames_path)
+    main(args.eaf_dir, args.output_dir, args.frames_path, position_csv=args.position_csv)
