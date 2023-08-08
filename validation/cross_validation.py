@@ -6,20 +6,33 @@ from matplotlib import pyplot as plt
 from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
 
 from models.hmm.facial_movement import ordinal_from_csv
+from models.hmm.prediction_visualisation import load_predictions
 from models.hmm.test_hmm import predict_hmm
 from models.hmm.train_hmm import fit_hmms
 from models.simple.memory_detector import MemoryBasedShakeDetector
 from models.simple.random_detector import RandomShakeDetector
 from models.simple.rule_detector import RuleBasedShakeDetector, majority_vote
-from utils.frames_csv import get_splits, load_df
+from utils.frames_csv import get_splits, load_df, load_all_labels
 from utils.io import mkdir_if_not_exists
+from validation.event_based import evaluate_events
+from models.hmm.filters import majority_filter
 
 
-def validate_hmm_folds(frames_csv, folds_dir, window_size=48, results_dir=None):
+def validate_hmm_folds(frames_csv,
+                       folds_dir,
+                       window_size=48,
+                       results_dir=None,
+                       filter_size=None,
+                       method='frame',
+                       load_previous=False):
     print(f'Loading samples from {frames_csv}')
     df_frames = load_df(frames_csv)
     splits = get_splits(df_frames)
     all_predictions = []
+    label_index = 0
+
+    if load_previous:
+        all_predictions = load_predictions(results_dir/'predictions.npz')
 
     matrix = np.zeros((2, 2))
 
@@ -27,15 +40,30 @@ def validate_hmm_folds(frames_csv, folds_dir, window_size=48, results_dir=None):
         print(f'Validating {fold}/{len(splits)}')
         df_val = df_frames[df_frames['split'] == fold]
 
-        labels, predictions = predict_hmm(df_val, folds_dir / fold, window_size=window_size)
-        matrix = matrix + confusion_matrix(np.concatenate(labels), np.concatenate(predictions), labels=[0, 1])
+        if load_previous:
+            labels = load_all_labels(df_val, shift=1, window=window_size)
+            predictions = all_predictions[label_index:label_index+len(df_val)]
+            label_index += len(df_val)
+        else:
+            labels, predictions = predict_hmm(df_val, folds_dir / fold, window_size=window_size)
 
-        if results_dir:
+        if filter_size:
+            predictions = [majority_filter(prediction, filter_size) for prediction in predictions]
+
+        if method == 'frame':
+            matrix = matrix + confusion_matrix(np.concatenate(labels), np.concatenate(predictions), labels=[0, 1])
+        elif method == 'event':
+            matrix = matrix + evaluate_events(np.concatenate(labels), np.concatenate(predictions))
+        else:
+            raise ValueError('Invalid method!')
+
+        if results_dir and not load_previous:
             all_predictions.extend(predictions)
 
     plot_confusion_matrix(matrix, title='Cross validation of HMM approach')
 
-    if results_dir:
+    if results_dir and not load_previous:
+        mkdir_if_not_exists(results_dir)
         np.savez(results_dir/'predictions.npz', *all_predictions)
 
 
@@ -88,7 +116,7 @@ def cross_validate_rule_preload(frames_csv, window_size=48, movement_threshold=0
 
 
 def cross_validate_memory_preload(frames_csv, window_size=48, movement_threshold=0.5):
-    """Cross validation wrapper specifically designed for the rule based classifier using HMM vectors.
+    """Cross validation wrapper specifically designed for the memory based classifier using HMM vectors.
 
     :param frames_csv: Dataframe with frame annotations, labels and any other information used by your model
     :param window_size: Window size to use during prediction of new sequences
@@ -215,7 +243,10 @@ if __name__ == '__main__':
         validate_hmm_folds(args.frames_csv,
                            args.folds_dir,
                            window_size=args.window_size,
-                           results_dir=args.save_dir)
+                           results_dir=args.save_dir,
+                           filter_size=None,
+                           method='event',
+                           load_previous=True)
     elif args.subparser == 'hmm_fit':
         fit_hmm_folds(args.frames_csv,
                       args.folds_dir)

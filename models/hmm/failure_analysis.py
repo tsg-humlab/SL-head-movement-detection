@@ -13,7 +13,7 @@ from utils.array_manipulation import get_uninterrupted_ones
 from utils.frames_csv import load_df, get_splits, load_all_labels
 
 
-def review_dataset(frames_csv, predictions_path, window=48):
+def prepare_evaluation(frames_csv, predictions_path, window=48):
     window = verify_window_size(window)
     cut = int((window - 1) / 2)
 
@@ -25,6 +25,12 @@ def review_dataset(frames_csv, predictions_path, window=48):
     for fold in splits:
         df_val = pd.concat([df_val, df_frames[df_frames['split'] == fold]], ignore_index=True)
     labels = load_all_labels(df_val, shift=1, window=window)
+
+    return df_val, cut, predictions, labels
+
+
+def review_dataset(frames_csv, predictions_path, window=48):
+    df_val, cut, predictions, labels = prepare_evaluation(frames_csv, predictions_path, window)
 
     indices = list(df_val.index)
     random.Random(42).shuffle(indices)
@@ -39,11 +45,11 @@ def review_dataset(frames_csv, predictions_path, window=48):
         capture = cv2.VideoCapture(df_val.iloc[index]['media_path'])
         add = cut + df_val.iloc[index]['start_frame']
 
-        prediction_indices = np.flatnonzero(np.diff(np.r_[0, prediction, 0]) != 0).reshape(-1, 2) - [0, 1]
-        truth_indices = np.flatnonzero(np.diff(np.r_[0, label, 0]) != 0).reshape(-1, 2) - [0, 1]
+        prediction_indices = get_group_indices(prediction)
+        truth_indices = get_group_indices(label)
 
         sentinel = True
-        show_preds = False
+        show_preds = True
         show_truths = True
         while sentinel:
             if show_truths:
@@ -125,13 +131,17 @@ def review_dataset(frames_csv, predictions_path, window=48):
             response = input('Continue? Y/n/t')
             if response.lower() != 'n':
                 sentinel = False
-                # show_preds = True
+                show_preds = True
             if response.lower() == 't':
                 sentinel = True
-                # show_preds = False
+                show_preds = False
 
         capture.release()
         cv2.destroyAllWindows()
+
+
+def get_group_indices(array, target=0):
+    return np.flatnonzero(np.diff(np.r_[target, array, target]) != 0).reshape(-1, 2) - [0, 1]
 
 
 def play_case(media_file):

@@ -7,6 +7,8 @@ from utils.frames_csv import load_all_labels, load_df, get_splits
 
 from Levenshtein import ratio, distance
 
+from models.hmm.filters import majority_filter
+
 
 def main(frames_csv, predictions_path):
     df_frames = load_df(frames_csv)
@@ -79,6 +81,28 @@ def main(frames_csv, predictions_path):
         input('Press Enter to continue...')
 
 
+def investigate_filter(frames_csv, predictions_path):
+    df_frames = load_df(frames_csv)
+    df_frames = df_frames[df_frames['split'].str.contains('fold')]
+    predictions = load_predictions(predictions_path)
+
+    splits = get_splits(df_frames)
+    labels = []
+    for fold in splits:
+        df_val = df_frames[df_frames['split'] == fold]
+
+        labels.extend(load_all_labels(df_val, shift=1, window=48))
+
+    set_seaborn_theme()
+
+    for i in range(len(predictions)):
+        sequence = predictions[i]
+        sequence_filtered = majority_filter(sequence, 11)
+
+        double_barcode_label(sequence, sequence_filtered, labels[i])
+        input('Press Enter to continue...')
+
+
 def load_predictions(path):
     preds = np.load(path)
     arrays = []
@@ -124,6 +148,41 @@ def barcode_and_truth(sequence, labels):
     plt.show()
 
 
+def double_barcode(sequence1, sequence2):
+    set_seaborn_theme()
+
+    pixel_per_bar = 4
+    dpi = 100
+
+    fig, axs = plt.subplots(2, figsize=(len(sequence1) * pixel_per_bar / dpi, 2), dpi=dpi)
+    axs[0].set_axis_off()
+    axs[0].imshow(sequence1.reshape(1, -1), cmap='brg', aspect='auto', interpolation='nearest')
+    axs[1].set_axis_off()
+    axs[1].imshow(sequence2.reshape(1, -1), cmap='brg', aspect='auto', interpolation='nearest')
+
+    plt.show()
+
+
+def double_barcode_label(sequence1, sequence2, labels):
+    sequence1 = sequence1 + np.where((sequence1 == labels) & (sequence1 == 1), 1, 0)
+    sequence2 = sequence2 + np.where((sequence2 == labels) & (sequence2 == 1), 1, 0)
+
+    set_seaborn_theme()
+
+    pixel_per_bar = 4
+    dpi = 100
+
+    fig, axs = plt.subplots(3, figsize=(len(sequence1) * pixel_per_bar / dpi, 2), dpi=dpi)
+    axs[0].set_axis_off()
+    axs[0].imshow(sequence1.reshape(1, -1), cmap='brg', aspect='auto', interpolation='nearest')
+    axs[1].set_axis_off()
+    axs[1].imshow(sequence2.reshape(1, -1), cmap='brg', aspect='auto', interpolation='nearest')
+    axs[2].set_axis_off()
+    axs[2].imshow(labels.reshape(1, -1), cmap='binary', aspect='auto', interpolation='nearest')
+
+    plt.show()
+
+
 def flips_indices(sequence):
     return np.diff(sequence) != 0
 
@@ -138,5 +197,5 @@ def flips(sequence):
 
 
 if __name__ == '__main__':
-    main(r"E:\Data\CNGT_pose\frames_pose.csv",
-         r"E:\Experiments\hmm\cross_val\val_preds\predictions.npz")
+    investigate_filter(r"E:\Data\CNGT_pose\frames_pose_fixed_v2.csv",
+         r"E:\Experiments\hmm\cross_val_fixed_v2\val_preds\predictions.npz")
