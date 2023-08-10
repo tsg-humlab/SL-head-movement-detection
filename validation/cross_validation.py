@@ -245,7 +245,7 @@ if __name__ == '__main__':
                            window_size=args.window_size,
                            results_dir=args.save_dir,
                            filter_size=None,
-                           method='event',
+                           method='frame',
                            load_previous=True)
     elif args.subparser == 'hmm_fit':
         fit_hmm_folds(args.frames_csv,

@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import accuracy_score
 
+from models.hmm.filters import majority_filter
 from models.hmm.prediction_visualisation import load_predictions, flips_indices
 from models.simple.detector import verify_window_size
 from pose.review_conflicts import show_frame
@@ -29,18 +30,23 @@ def prepare_evaluation(frames_csv, predictions_path, window=48):
     return df_val, cut, predictions, labels
 
 
-def review_dataset(frames_csv, predictions_path, window=48):
+def review_dataset(frames_csv, predictions_path, window=48, filter_size=None):
     df_val, cut, predictions, labels = prepare_evaluation(frames_csv, predictions_path, window)
 
     indices = list(df_val.index)
-    random.Random(42).shuffle(indices)
+    random.Random(14).shuffle(indices)
     video_n = 0
 
-    for index in indices:
+    start = 0
+
+    for index in indices[start:]:
         video_n += 1
 
         prediction = predictions[index]
         label = labels[index]
+
+        if filter_size:
+            prediction = majority_filter(prediction, filter_size)
 
         capture = cv2.VideoCapture(df_val.iloc[index]['media_path'])
         add = cut + df_val.iloc[index]['start_frame']
@@ -169,7 +175,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('frames_csv', type=Path)
     parser.add_argument('predictions_csv', type=Path)
-    parser.add_argument('-o', '--overwrite', action='store_true')
+    parser.add_argument('-f', '--filter_size', type=int)
     args = parser.parse_args()
 
-    review_dataset(args.frames_csv, args.predictions_csv)
+    review_dataset(args.frames_csv, args.predictions_csv, filter_size=args.filter_size)
