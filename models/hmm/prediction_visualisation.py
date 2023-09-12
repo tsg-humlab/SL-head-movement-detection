@@ -1,6 +1,6 @@
 import numpy as np
 from matplotlib import pyplot as plt
-from sklearn.metrics import accuracy_score, precision_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
 from utils.draw import set_seaborn_theme
 from utils.frames_csv import load_all_labels, load_df, get_splits
@@ -20,65 +20,85 @@ def main(frames_csv, predictions_path):
     for fold in splits:
         df_val = df_frames[df_frames['split'] == fold]
 
-        labels.extend(load_all_labels(df_val, shift=1, window=48))
+        labels.extend(load_all_labels(df_val, shift=1, window=36))
 
     statistics = {'flip_diff': np.array(list(map(flips, predictions))) / np.array(list(map(flips, labels))),
                   'edit_ratio': np.array([ratio(predictions[i], labels[i]) for i in range(len(predictions))]),
                   'edit_dist': np.array([distance(predictions[i], labels[i]) for i in range(len(predictions))]),
                   'acc': np.array([accuracy_score(predictions[i], labels[i]) for i in range(len(predictions))]),
                   'precision': np.array([precision_score(predictions[i], labels[i]) for i in range(len(predictions))]),
+                  'recall': np.array([recall_score(predictions[i], labels[i]) for i in range(len(predictions))]),
+                  'f1': np.array([f1_score(predictions[i], labels[i]) for i in range(len(predictions))])
                   }
 
     set_seaborn_theme()
+
+    fig, axs = plt.subplots(3, 2)
 
     print(f'Range for flip ratio: '
           f'{round(min(statistics["flip_diff"]), 2)}-{round(max(statistics["flip_diff"]), 2)}')
     print(f'Mean for flip ratio: {round(float(np.mean(statistics["flip_diff"])), 2)}')
     print(f'Std for flip ratio: {round(float(np.std(statistics["flip_diff"])), 2)}')
     print('#' * 40)
-    plt.hist(statistics['flip_diff'], bins=40)
-    plt.title('Histogram of flip ratio', fontsize=15)
-    plt.show()
+    axs[0, 0].hist(statistics['flip_diff'], bins=40)
+    axs[0, 0].set_title('Histogram of flip ratio', fontsize=10)
 
     print(f'Range for Levenshtein ratio: '
           f'{round(min(statistics["edit_ratio"]), 2)}-{round(max(statistics["edit_ratio"]), 2)}')
     print(f'Mean for Levenshtein ratio: {round(float(np.mean(statistics["edit_ratio"])), 2)}')
     print(f'Std for Levenshtein ratio: {round(float(np.std(statistics["edit_ratio"])), 2)}')
     print('#' * 40)
-    plt.hist(statistics['edit_ratio'], bins=40)
-    plt.title('Histogram of Levenshtein ratio', fontsize=15)
-    plt.show()
+    axs[0, 1].hist(statistics['edit_ratio'], bins=40)
+    axs[0, 1].set_title('Histogram of Levenshtein ratio', fontsize=10)
 
-    print(f'Range for Levenshtein distance: '
-          f'{round(min(statistics["edit_dist"]), 2)}-{round(max(statistics["edit_dist"]), 2)}')
-    print(f'Mean for Levenshtein distance: {round(float(np.mean(statistics["edit_dist"])), 2)}')
-    print(f'Std for Levenshtein distance: {round(float(np.std(statistics["edit_dist"])), 2)}')
-    print('#' * 40)
-    plt.hist(statistics['edit_dist'], bins=40)
-    plt.title('Histogram of Levenshtein distance', fontsize=15)
-    plt.show()
+    # print(f'Range for Levenshtein distance: '
+    #       f'{round(min(statistics["edit_dist"]), 2)}-{round(max(statistics["edit_dist"]), 2)}')
+    # print(f'Mean for Levenshtein distance: {round(float(np.mean(statistics["edit_dist"])), 2)}')
+    # print(f'Std for Levenshtein distance: {round(float(np.std(statistics["edit_dist"])), 2)}')
+    # print('#' * 40)
+    # axs[0, 2].hist(statistics['edit_dist'], bins=40)
+    # axs[0, 2].set_title('Histogram of Levenshtein distance', fontsize=10)
 
     print(f'Range for accuracy: '
           f'{round(min(statistics["acc"]), 2)}-{round(max(statistics["acc"]), 2)}')
     print(f'Mean for accuracy: {round(float(np.mean(statistics["acc"])), 2)}')
     print(f'Std for accuracy: {round(float(np.std(statistics["acc"])), 2)}')
     print('#' * 40)
-    plt.hist(statistics['acc'], bins=40)
-    plt.title('Histogram of Accuracy', fontsize=15)
-    plt.show()
+    axs[1, 0].hist(statistics['acc'], bins=40)
+    axs[1, 0].set_title('Histogram of Accuracy', fontsize=10)
 
     print(f'Range for precision: '
           f'{round(min(statistics["precision"]), 2)}-{round(max(statistics["precision"]), 2)}')
     print(f'Mean for precision: {round(float(np.mean(statistics["precision"])), 2)}')
     print(f'Std for precision: {round(float(np.std(statistics["precision"])), 2)}')
     print('#' * 40)
-    plt.hist(statistics['precision'], bins=40)
-    plt.title('Histogram of precision', fontsize=15)
+    axs[1, 1].hist(statistics['precision'], bins=40)
+    axs[1, 1].set_title('Histogram of precision', fontsize=10)
+
+    print(f'Range for recall: '
+          f'{round(min(statistics["recall"]), 2)}-{round(max(statistics["recall"]), 2)}')
+    print(f'Mean for recall: {round(float(np.mean(statistics["recall"])), 2)}')
+    print(f'Std for recall: {round(float(np.std(statistics["recall"])), 2)}')
+    print('#' * 40)
+    axs[2, 0].hist(statistics['recall'], bins=40)
+    axs[2, 0].set_title('Histogram of recall', fontsize=10)
+
+    print(f'Range for f1 score: '
+          f'{round(min(statistics["f1"]), 2)}-{round(max(statistics["f1"]), 2)}')
+    print(f'Mean for f1: {round(float(np.mean(statistics["f1"])), 2)}')
+    print(f'Std for f1: {round(float(np.std(statistics["f1"])), 2)}')
+    print('#' * 40)
+    axs[2, 1].hist(statistics['f1'], bins=40)
+    axs[2, 1].set_title('Histogram of f1 score', fontsize=10)
+
+    plt.suptitle('Performance of head-shake detection on CNGT videos')
+    plt.tight_layout()
+
     plt.show()
 
-    for i in range(len(predictions)):
-        barcode_and_truth(predictions[i], labels[i])
-        input('Press Enter to continue...')
+    # for i in range(len(predictions)):
+    #     barcode_and_truth(predictions[i], labels[i])
+    #     input('Press Enter to continue...')
 
 
 def investigate_filter(frames_csv, predictions_path):
@@ -97,7 +117,7 @@ def investigate_filter(frames_csv, predictions_path):
 
     for i in range(len(predictions)):
         sequence = predictions[i]
-        sequence_filtered = majority_filter(sequence, 11)
+        sequence_filtered = majority_filter(sequence, 201)
 
         double_barcode_label(sequence, sequence_filtered, labels[i])
         input('Press Enter to continue...')

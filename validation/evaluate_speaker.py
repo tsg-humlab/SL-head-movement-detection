@@ -17,7 +17,7 @@ from scipy.stats import f_oneway
 
 def validate_hmm_folds(frames_csv,
                        folds_dir,
-                       window_size=48,
+                       window_size=36,
                        results_dir=None,
                        filter_size=None,
                        load_previous=False):
@@ -126,7 +126,7 @@ def validate_hmm_folds(frames_csv,
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('frames_csv', type=Path)
-    parser.add_argument('-w', '--window_size', default=48, type=int)
+    parser.add_argument('-w', '--window_size', default=36, type=int)
     parser.add_argument('-t', '--movement_threshold', default=0.5, type=float)
     subparsers = parser.add_subparsers(dest='subparser')
 
@@ -148,5 +148,5 @@ if __name__ == '__main__':
                            args.folds_dir,
                            window_size=args.window_size,
                            results_dir=args.save_dir,
-                           filter_size=None,
+                           filter_size=11,
                            load_previous=True)

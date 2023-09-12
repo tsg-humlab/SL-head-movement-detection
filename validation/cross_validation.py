@@ -3,7 +3,7 @@ from pathlib import Path
 
 import numpy as np
 from matplotlib import pyplot as plt
-from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
+from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix, f1_score
 
 from models.hmm.facial_movement import ordinal_from_csv
 from models.hmm.prediction_visualisation import load_predictions
@@ -12,24 +12,80 @@ from models.hmm.train_hmm import fit_hmms
 from models.simple.memory_detector import MemoryBasedShakeDetector
 from models.simple.random_detector import RandomShakeDetector
 from models.simple.rule_detector import RuleBasedShakeDetector, majority_vote
+from utils.draw import set_seaborn_theme
 from utils.frames_csv import get_splits, load_df, load_all_labels
 from utils.io import mkdir_if_not_exists
 from validation.event_based import evaluate_events
 from models.hmm.filters import majority_filter
 
 
+def hmm_filter_search(frames_csv,
+                      folds_dir,
+                      results_dir,
+                      method='event',
+                      metric='f1'):
+    # sizes = [3, 7, 11, 15, 19, 23, 27, 31, 35, 39]
+    # sizes = [11, 21, 31, 41, 51, 61, 71, 81, 91, 101]
+    sizes = [11, 51, 101, 151, 201]
+    results = []
+
+    for size in sizes:
+        results.append(validate_hmm_folds(frames_csv,
+                                          folds_dir,
+                                          filter_size=size,
+                                          window_size=36,
+                                          method=method,
+                                          metric=metric,
+                                          results_dir=results_dir,
+                                          load_previous=True))
+
+    set_seaborn_theme()
+    plt.title('F1 score for head-shake detector on different filter sizes', fontsize=15)
+    plt.locator_params(axis='x', nbins=10)
+    plt.plot(sizes, results, 'o-')
+    plt.xticks(sizes, sizes)
+    plt.xlabel('Filter size (frames)')
+    plt.ylabel('F1 score')
+    plt.show()
+
+
+def hmm_window_search(frames_csv,
+                      folds_dir,
+                      method='frame',
+                      metric='f1'):
+    sizes = [12, 24, 36, 48, 60, 72, 84, 96, 108, 120]
+    labels = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5]
+    results = []
+
+    for size in sizes:
+        results.append(validate_hmm_folds(frames_csv, folds_dir, window_size=size, method=method, metric=metric))
+
+    set_seaborn_theme()
+    plt.title('F1 score for head-shake detector on different window sizes', fontsize=15)
+    plt.locator_params(axis='x', nbins=10)
+    plt.plot(sizes, results, 'o-')
+    plt.xticks(sizes, labels)
+    plt.xlabel('Window size (seconds)')
+    plt.ylabel('F1 score')
+    plt.show()
+
+
 def validate_hmm_folds(frames_csv,
                        folds_dir,
-                       window_size=48,
+                       window_size=36,
                        results_dir=None,
                        filter_size=None,
                        method='frame',
-                       load_previous=False):
+                       load_previous=False,
+                       metric=None):
     print(f'Loading samples from {frames_csv}')
     df_frames = load_df(frames_csv)
     splits = get_splits(df_frames)
     all_predictions = []
     label_index = 0
+
+    if metric == 'f1':
+        all_labels = []
 
     if load_previous:
         all_predictions = load_predictions(results_dir/'predictions.npz')
@@ -57,14 +113,23 @@ def validate_hmm_folds(frames_csv,
         else:
             raise ValueError('Invalid method!')
 
-        if results_dir and not load_previous:
+        if (results_dir and not load_previous) or (metric == 'f1'):
             all_predictions.extend(predictions)
-
-    plot_confusion_matrix(matrix, title='Cross validation of HMM approach')
+        if metric == 'f1':
+            all_labels.extend(labels)
 
     if results_dir and not load_previous:
         mkdir_if_not_exists(results_dir)
         np.savez(results_dir/'predictions.npz', *all_predictions)
+
+    if metric == 'f1':
+        if method == 'frame':
+            return f1_score(np.concatenate(all_labels), np.concatenate(all_predictions))
+        if method == 'event':
+            tn, fp, fn, tp = evaluate_events(np.concatenate(all_labels), np.concatenate(all_predictions)).ravel()
+            return tp / (tp + (0.5 * (fp + fn)))
+
+    plot_confusion_matrix(matrix, title='Event-level confusion matrix for head-shake detection')
 
 
 def fit_hmm_folds(frames_csv, folds_dir):
@@ -222,13 +287,20 @@ def plot_confusion_matrix(matrix, title=None):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('frames_csv', type=Path)
-    parser.add_argument('-w', '--window_size', default=48, type=int)
+    parser.add_argument('-w', '--window_size', default=36 , type=int)
     parser.add_argument('-t', '--movement_threshold', default=0.5, type=float)
     subparsers = parser.add_subparsers(dest='subparser')
 
     hmm_parser = subparsers.add_parser('hmm')
     hmm_parser.add_argument('folds_dir', type=Path)
     hmm_parser.add_argument('-s', '--save_dir', type=Path)
+
+    window_parser = subparsers.add_parser('window')
+    window_parser.add_argument('folds_dir', type=Path)
+
+    filter_parser = subparsers.add_parser('filter')
+    filter_parser.add_argument('folds_dir', type=Path)
+    filter_parser.add_argument('-s', '--save_dir', type=Path)
 
     hmm_fit_parser = subparsers.add_parser('hmm_fit')
     hmm_fit_parser.add_argument('folds_dir', type=Path)
@@ -245,8 +317,19 @@ if __name__ == '__main__':
                            window_size=args.window_size,
                            results_dir=args.save_dir,
                            filter_size=None,
-                           method='frame',
+                           method='event',
                            load_previous=True)
+    elif args.subparser == 'window':
+        hmm_window_search(args.frames_csv,
+                          args.fols_dir,
+                          method='frame',
+                          metric='f1')
+    elif args.subparser == 'filter':
+        hmm_filter_search(args.frames_csv,
+                          args.folds_dir,
+                          results_dir=args.save_dir,
+                          method='event',
+                          metric='f1')
     elif args.subparser == 'hmm_fit':
         fit_hmm_folds(args.frames_csv,
                       args.folds_dir)

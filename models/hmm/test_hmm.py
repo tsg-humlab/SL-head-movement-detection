@@ -11,7 +11,7 @@ from models.simple.detector import verify_window_size
 from utils.frames_csv import load_df, load_all_labels
 
 
-def predict_hmm(frames_csv, models_dir, window_size=48):
+def predict_hmm(frames_csv, models_dir, window_size=36):
     window_size = verify_window_size(window_size)
 
     df_frames = load_df(frames_csv)
