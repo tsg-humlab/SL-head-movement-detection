@@ -14,41 +14,12 @@ class HeadMovementParser:
         self.fpms = fps * 0.001
 
     def parse(self, eaf):
-        return self.get_head_annotations(eaf)
+        movements = self.parse_tier(eaf.tiers['Head movement'], eaf.timeslots)
 
-    def get_head_annotations(self, eaf):
-        movements_left = self.parse_tier(eaf.tiers['Head movement S1'], eaf.timeslots)
-        movements_right = self.parse_tier(eaf.tiers['Head movement S2'], eaf.timeslots)
-
-        return movements_left, movements_right
-
-    @staticmethod
-    def get_speaker_ids(eaf):
-        speakers = set()
-
-        for descriptor in eaf.media_descriptors:
-            if descriptor['MIME_TYPE'] == 'video/mpeg':
-                filename = Path(descriptor['MEDIA_URL']).stem
-
-                hit = re.search('S[0-9][0-9][0-9]', filename)
-                if hit is not None:
-                    speakers.add(hit.group())
-
-        speakers = list(speakers)
-
-        if len(speakers) == 1:
-            if int(speakers[0][1:]) % 2 == 0:
-                speakers.insert(0, None)
-            else:
-                speakers.append(None)
-        elif len(speakers) != 2:
-            raise RuntimeError(f'The number of speakers in a given CorpusNGT video should be 2, {len(speakers)} given')
-        elif int(speakers[0][1:]) % 2 == 0:
-            speakers.reverse()
-
-        return speakers
+        return movements
 
     def parse_tier(self, tier, timeslots):
+        """ Parse a tier from an EAF file and save label, start, and end times (ms) """
         annotations = []
 
         for annotation in tier[0].values():
@@ -62,33 +33,28 @@ class HeadMovementParser:
 
 
 class Video:
-    def __init__(self, ngt_id, signer_left, signer_right):
+    def __init__(self, ngt_id, signer):
         self.ngt_id = ngt_id
-        self.signer_left = signer_left
-        self.signer_right = signer_right
+        self.signer = signer
 
     def __getitem__(self, signer_id):
-        matches = [self.signer_left.signer_id == signer_id, self.signer_right.signer_id == signer_id]
+        matches = [self.signer.signer_id == signer_id]
 
-        if matches[0] and matches[1]:
-            raise RuntimeError('Same signer detected twice in one video')
-        elif not matches[0] and not matches[1]:
-            raise KeyError(f'Signer {signer_id} not found in video')
-        elif matches[0]:
-            return self.signer_left
-        else:
-            return self.signer_right
+        if matches[0]:
+            return self.signer
 
     @classmethod
-    def from_eaf(cls, ngt_id, eaf, fps=25):
+    def from_eaf(cls, eaf_path, fps=25):
+        eaf = Eaf(eaf_path, 'pympi')
+        ngt_id = eaf_path.split("/")[-1].split("_")[0]
+        signer_id = eaf_path.split("/")[-1].split("_")[1].split(".")[0]
         movement_parser = HeadMovementParser(fps=fps)
-        signer_id_left, signer_id_right = movement_parser.get_speaker_ids(eaf)
-        annotations_left, annotations_right = movement_parser.parse(eaf)
+        annotations = movement_parser.parse(eaf)
 
-        return cls(ngt_id, Signer(signer_id_left, annotations_left), Signer(signer_id_right, annotations_right))
+        return cls(ngt_id, Signer(signer_id, annotations))
 
     def __repr__(self):
-        return f'Video {self.ngt_id} with {self.signer_left} (left) and {self.signer_right} (right)'
+        return f'Video {self.ngt_id} with {self.signer}'
 
 
 class Signer:
@@ -122,10 +88,9 @@ def main():
     print(f'Found {len(files)} annotation files')
 
     for file in files:
-        eaf = Eaf(file, 'pympi')
-        video = Video.from_eaf(Path(file).stem, eaf)
+        video = Video.from_eaf(file)
 
-        if len(video.signer_left.annotations) > 0 or len(video.signer_right.annotations) > 0:
+        if len(video.signer.annotations) > 0:
             videos.append(video)
 
     print('Parsed annotation directory')
