@@ -1,9 +1,9 @@
 import numpy as np
 
-from models.simple.detector import ShakeDetector
+from models.simple.detector import ShakeNodDetector
 
 
-class RandomShakeDetector(ShakeDetector):
+class RandomShakeDetector(ShakeNodDetector):
     def __init__(self, window_size, movement_threshold, seed=None):
         super().__init__(window_size, movement_threshold)
 

@@ -1,39 +1,62 @@
 import numpy as np
+import argparse
+from pathlib import Path
+
 from matplotlib import pyplot as plt
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
-from utils.draw import set_seaborn_theme
-from utils.frames_csv import load_all_labels, load_df, get_splits
+from utils.draw import set_seaborn_theme, reset_seaborn_theme
 
 from Levenshtein import ratio, distance
 
-from models.hmm.filters import majority_filter
 
+def main(frames_csv, predictions_path, fold):
+    """Show the results of the head-shake detection on the CNGT videos.
 
-def main(frames_csv, predictions_path):
+    :param frames_csv: Path to the CSV with the frame ranges
+    :param predictions_path: Path to the predictions file 
+    """
+    from utils.frames_csv import load_all_labels, load_df, get_splits
     df_frames = load_df(frames_csv)
-    df_frames = df_frames[df_frames['split'].str.contains('fold')]
     predictions = load_predictions(predictions_path)
 
     splits = get_splits(df_frames)
+    if fold == "val":
+        splits = splits[4:5]
+    elif fold == "test":
+        splits = ['test']
+
     labels = []
     for fold in splits:
         df_val = df_frames[df_frames['split'] == fold]
-
         labels.extend(load_all_labels(df_val, shift=1, window=36))
+    
+    # Only keep the labels that contain nods
+    new_labels = []
+    for l in labels:
+        if 2 in l:
+            new_labels.append(l)
+    labels = new_labels
+
+    # Check the length of the predictions and labels
+    for i in range(len(predictions)):
+        if len(predictions[i]) != len(labels[i]):
+            print(f'Length mismatch: {len(predictions[i])} vs {len(labels[i])}')
 
     statistics = {'flip_diff': np.array(list(map(flips, predictions))) / np.array(list(map(flips, labels))),
                   'edit_ratio': np.array([ratio(predictions[i], labels[i]) for i in range(len(predictions))]),
                   'edit_dist': np.array([distance(predictions[i], labels[i]) for i in range(len(predictions))]),
                   'acc': np.array([accuracy_score(predictions[i], labels[i]) for i in range(len(predictions))]),
-                  'precision': np.array([precision_score(predictions[i], labels[i]) for i in range(len(predictions))]),
-                  'recall': np.array([recall_score(predictions[i], labels[i]) for i in range(len(predictions))]),
-                  'f1': np.array([f1_score(predictions[i], labels[i]) for i in range(len(predictions))])
+                  'precision': np.array([precision_score(predictions[i], labels[i], average='weighted') for i in range(len(predictions))]),
+                  'recall': np.array([recall_score(predictions[i], labels[i], average='weighted') for i in range(len(predictions))]),
+                  'f1': np.array([f1_score(predictions[i], labels[i], average='weighted') for i in range(len(predictions))])
                   }
 
     set_seaborn_theme()
-
-    fig, axs = plt.subplots(3, 2)
+    fig, axs = plt.subplots(nrows=4, ncols=2, figsize=(10, 8))
+    fig.tight_layout()
+    
+    plt.title('Performance of head-shake detection on CNGT videos')
 
     print(f'Range for flip ratio: '
           f'{round(min(statistics["flip_diff"]), 2)}-{round(max(statistics["flip_diff"]), 2)}')
@@ -48,80 +71,54 @@ def main(frames_csv, predictions_path):
     print(f'Mean for Levenshtein ratio: {round(float(np.mean(statistics["edit_ratio"])), 2)}')
     print(f'Std for Levenshtein ratio: {round(float(np.std(statistics["edit_ratio"])), 2)}')
     print('#' * 40)
-    axs[0, 1].hist(statistics['edit_ratio'], bins=40)
-    axs[0, 1].set_title('Histogram of Levenshtein ratio', fontsize=10)
+    axs[1, 0].hist(statistics['edit_ratio'], bins=40)
+    axs[1, 0].set_title('Histogram of Levenshtein ratio', fontsize=10)
 
-    # print(f'Range for Levenshtein distance: '
-    #       f'{round(min(statistics["edit_dist"]), 2)}-{round(max(statistics["edit_dist"]), 2)}')
-    # print(f'Mean for Levenshtein distance: {round(float(np.mean(statistics["edit_dist"])), 2)}')
-    # print(f'Std for Levenshtein distance: {round(float(np.std(statistics["edit_dist"])), 2)}')
-    # print('#' * 40)
-    # axs[0, 2].hist(statistics['edit_dist'], bins=40)
-    # axs[0, 2].set_title('Histogram of Levenshtein distance', fontsize=10)
+    print(f'Range for Levenshtein distance: '
+          f'{round(min(statistics["edit_dist"]), 2)}-{round(max(statistics["edit_dist"]), 2)}')
+    print(f'Mean for Levenshtein distance: {round(float(np.mean(statistics["edit_dist"])), 2)}')
+    print(f'Std for Levenshtein distance: {round(float(np.std(statistics["edit_dist"])), 2)}')
+    print('#' * 40)
+    axs[1, 1].hist(statistics['edit_dist'], bins=40)
+    axs[1, 1].set_title('Histogram of Levenshtein distance', fontsize=10)
 
     print(f'Range for accuracy: '
           f'{round(min(statistics["acc"]), 2)}-{round(max(statistics["acc"]), 2)}')
     print(f'Mean for accuracy: {round(float(np.mean(statistics["acc"])), 2)}')
     print(f'Std for accuracy: {round(float(np.std(statistics["acc"])), 2)}')
     print('#' * 40)
-    axs[1, 0].hist(statistics['acc'], bins=40)
-    axs[1, 0].set_title('Histogram of Accuracy', fontsize=10)
+    axs[2, 0].hist(statistics['acc'], bins=40)
+    axs[2, 0].set_title('Histogram of Accuracy', fontsize=10)
 
     print(f'Range for precision: '
           f'{round(min(statistics["precision"]), 2)}-{round(max(statistics["precision"]), 2)}')
     print(f'Mean for precision: {round(float(np.mean(statistics["precision"])), 2)}')
     print(f'Std for precision: {round(float(np.std(statistics["precision"])), 2)}')
     print('#' * 40)
-    axs[1, 1].hist(statistics['precision'], bins=40)
-    axs[1, 1].set_title('Histogram of precision', fontsize=10)
+    axs[2, 1].hist(statistics['precision'], bins=40)
+    axs[2, 1].set_title('Histogram of precision', fontsize=10)
 
     print(f'Range for recall: '
           f'{round(min(statistics["recall"]), 2)}-{round(max(statistics["recall"]), 2)}')
     print(f'Mean for recall: {round(float(np.mean(statistics["recall"])), 2)}')
     print(f'Std for recall: {round(float(np.std(statistics["recall"])), 2)}')
     print('#' * 40)
-    axs[2, 0].hist(statistics['recall'], bins=40)
-    axs[2, 0].set_title('Histogram of recall', fontsize=10)
+    axs[3, 0].hist(statistics['recall'], bins=40)
+    axs[3, 0].set_title('Histogram of recall', fontsize=10)
 
     print(f'Range for f1 score: '
           f'{round(min(statistics["f1"]), 2)}-{round(max(statistics["f1"]), 2)}')
     print(f'Mean for f1: {round(float(np.mean(statistics["f1"])), 2)}')
     print(f'Std for f1: {round(float(np.std(statistics["f1"])), 2)}')
     print('#' * 40)
-    axs[2, 1].hist(statistics['f1'], bins=40)
-    axs[2, 1].set_title('Histogram of f1 score', fontsize=10)
+    axs[3, 1].hist(statistics['f1'], bins=40)
+    axs[3, 1].set_title('Histogram of f1 score', fontsize=10)
 
-    plt.suptitle('Performance of head-shake detection on CNGT videos')
     plt.tight_layout()
 
     plt.show()
 
-    # for i in range(len(predictions)):
-    #     barcode_and_truth(predictions[i], labels[i])
-    #     input('Press Enter to continue...')
-
-
-def investigate_filter(frames_csv, predictions_path):
-    df_frames = load_df(frames_csv)
-    df_frames = df_frames[df_frames['split'].str.contains('fold')]
-    predictions = load_predictions(predictions_path)
-
-    splits = get_splits(df_frames)
-    labels = []
-    for fold in splits:
-        df_val = df_frames[df_frames['split'] == fold]
-
-        labels.extend(load_all_labels(df_val, shift=1, window=48))
-
-    set_seaborn_theme()
-
-    for i in range(len(predictions)):
-        sequence = predictions[i]
-        sequence_filtered = majority_filter(sequence, 201)
-
-        double_barcode_label(sequence, sequence_filtered, labels[i])
-        input('Press Enter to continue...')
-
+    reset_seaborn_theme()
 
 def load_predictions(path):
     preds = np.load(path)
@@ -135,73 +132,6 @@ def load_predictions(path):
     preds.close()
 
     return arrays
-
-
-def barcode(sequence):
-    set_seaborn_theme()
-
-    pixel_per_bar = 4
-    dpi = 100
-
-    fig = plt.figure(figsize=(len(sequence) * pixel_per_bar / dpi, 2), dpi=dpi)
-    ax = fig.add_axes([0, 0, 1, 1])
-    ax.set_axis_off()
-    ax.imshow(sequence.reshape(1, -1), cmap='Paired', aspect='auto', interpolation='nearest')
-
-    plt.show()
-
-
-def barcode_and_truth(sequence, labels):
-    sequence = sequence + np.where((sequence == labels) & (sequence == 1), 1, 0)
-
-    set_seaborn_theme()
-
-    pixel_per_bar = 4
-    dpi = 100
-
-    fig, axs = plt.subplots(2, figsize=(len(sequence) * pixel_per_bar / dpi, 2), dpi=dpi)
-    axs[0].set_axis_off()
-    axs[0].imshow(sequence.reshape(1, -1), cmap='brg', aspect='auto', interpolation='nearest')
-    axs[1].set_axis_off()
-    axs[1].imshow(labels.reshape(1, -1), cmap='binary', aspect='auto', interpolation='nearest')
-
-    plt.show()
-
-
-def double_barcode(sequence1, sequence2):
-    set_seaborn_theme()
-
-    pixel_per_bar = 4
-    dpi = 100
-
-    fig, axs = plt.subplots(2, figsize=(len(sequence1) * pixel_per_bar / dpi, 2), dpi=dpi)
-    axs[0].set_axis_off()
-    axs[0].imshow(sequence1.reshape(1, -1), cmap='brg', aspect='auto', interpolation='nearest')
-    axs[1].set_axis_off()
-    axs[1].imshow(sequence2.reshape(1, -1), cmap='brg', aspect='auto', interpolation='nearest')
-
-    plt.show()
-
-
-def double_barcode_label(sequence1, sequence2, labels):
-    sequence1 = sequence1 + np.where((sequence1 == labels) & (sequence1 == 1), 1, 0)
-    sequence2 = sequence2 + np.where((sequence2 == labels) & (sequence2 == 1), 1, 0)
-
-    set_seaborn_theme()
-
-    pixel_per_bar = 4
-    dpi = 100
-
-    fig, axs = plt.subplots(3, figsize=(len(sequence1) * pixel_per_bar / dpi, 2), dpi=dpi)
-    axs[0].set_axis_off()
-    axs[0].imshow(sequence1.reshape(1, -1), cmap='brg', aspect='auto', interpolation='nearest')
-    axs[1].set_axis_off()
-    axs[1].imshow(sequence2.reshape(1, -1), cmap='brg', aspect='auto', interpolation='nearest')
-    axs[2].set_axis_off()
-    axs[2].imshow(labels.reshape(1, -1), cmap='binary', aspect='auto', interpolation='nearest')
-
-    plt.show()
-
 
 def flips_indices(sequence):
     return np.diff(sequence) != 0
@@ -217,5 +147,10 @@ def flips(sequence):
 
 
 if __name__ == '__main__':
-    investigate_filter(r"E:\Data\CNGT_pose\frames_pose_fixed_v2.csv",
-         r"E:\Experiments\hmm\cross_val_fixed_v2\val_preds\predictions.npz")
+    parser = argparse.ArgumentParser()
+    parser.add_argument('frames_csv', type=Path)
+    parser.add_argument('predictions_csv', type=Path)
+    parser.add_argument('fold', type=str)
+
+    args = parser.parse_args()
+    main(args.frames_csv, args.predictions_csv, args.fold)

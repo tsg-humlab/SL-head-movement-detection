@@ -1,9 +1,9 @@
 import abc
 
-from models.hmm.facial_movement import ordinal_from_csv
+from models.processing.facial_movement import ordinal_from_csv
 
 
-class ShakeDetector:
+class ShakeNodDetector:
     def __init__(self, window_size, movement_threshold):
         self.movement_threshold = movement_threshold
 
