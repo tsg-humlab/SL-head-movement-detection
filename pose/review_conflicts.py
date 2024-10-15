@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 import pandas as pd
 
-from pose import KEYPOINTS, VIDEO, BOXES
+from pose import KEYPOINTS, KEYPOINT_VIDEO, BOXES, POSE_VIDEO, HEADPOSES
 from pose.analyze_results import is_output_dir
 from utils.array_manipulation import find_subject
 from utils.draw import draw_opaque_box
@@ -22,19 +22,19 @@ def review_all(results_dir, output_csv, overwrite=False):
     assert is_output_dir(results_dir)
 
     if not os.path.exists(output_csv) or overwrite:
-        df_output = pd.DataFrame(columns=['case_id', 'comment'])
+        df_output = pd.DataFrame(columns=['video_id', 'comment'])
     else:
         df_output = pd.read_csv(output_csv)
 
     i = len(df_output)
-    files = list((results_dir / KEYPOINTS).glob('*.npy'))
+    files = list((Path(results_dir) / KEYPOINTS).glob('*.npy'))
     print(f'Found {len(files)} cases ({i} processed)')
 
     for file in files:
-        media_path = results_dir / VIDEO / f'{file.stem}.mp4'
-        boxes_path = results_dir / BOXES / f'{file.stem}.npy'
-
-        if len(df_output[df_output['case_id'].str.contains(media_path.stem)]) > 0:
+        media_path = Path(results_dir) / KEYPOINT_VIDEO / f'{file.stem}.mp4'
+        boxes_path = Path(results_dir) / BOXES / f'{file.stem}.npy'
+        
+        if len(df_output[df_output['video_id'].str.contains(str(Path(media_path.stem)))]) > 0:
             continue
 
         i += 1
@@ -74,7 +74,7 @@ def play_case(keypoints_file, boxes_file, media_file):
             if target_bbox[4] > 0:
                 draw_opaque_box(frame, boxes[idx, target_signer], alpha=0.8)
 
-            cv2.imshow(media_file.stem, frame)
+            cv2.imshow("video window", frame)
             cv2.waitKey(1)
 
             idx += 1

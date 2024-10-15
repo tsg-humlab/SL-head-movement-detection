@@ -1,3 +1,6 @@
 BOXES = 'boxes'
 KEYPOINTS = 'keypoints'
-VIDEO = 'video'
+KEYPOINT_VIDEO = 'keypoint_video'
+HEADBOXES = 'headboxes'
+POSE_VIDEO = 'pose_video'
+HEADPOSES = 'headposes'

@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
-from pose import KEYPOINTS, BOXES, VIDEO
+from pose import KEYPOINTS, BOXES, KEYPOINT_VIDEO, POSE_VIDEO, HEADPOSES
 
 
 def calculate_statistics(results_dir):
@@ -41,10 +41,10 @@ def is_output_dir(path):
     if not os.path.exists(path):
         return False
 
-    subdirs = [BOXES, KEYPOINTS, VIDEO]
+    subdirs = [BOXES, KEYPOINTS, KEYPOINT_VIDEO]
 
     for subdir in subdirs:
-        if not os.path.exists(path / subdir):
+        if not os.path.exists(os.path.join(path, subdir)):
             return False
 
     return True
