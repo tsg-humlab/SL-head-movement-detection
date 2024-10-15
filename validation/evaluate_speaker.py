@@ -5,7 +5,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from sklearn.metrics import precision_score, recall_score, f1_score
 
-from models.hmm.filters import majority_filter
+from models.processing.filters import majority_filter
 from models.hmm.prediction_visualisation import load_predictions
 from models.hmm.test_hmm import predict_hmm
 from utils.draw import set_seaborn_theme
@@ -15,12 +15,8 @@ from utils.io import mkdir_if_not_exists
 from scipy.stats import f_oneway
 
 
-def validate_hmm_folds(frames_csv,
-                       folds_dir,
-                       window_size=36,
-                       results_dir=None,
-                       filter_size=None,
-                       load_previous=False):
+def validate_hmm_folds(frames_csv, folds_dir, window_size=36, results_dir=None,
+                       filter_size=None, load_previous=False):
     print(f'Loading samples from {frames_csv}')
     df_frames = load_df(frames_csv)
     splits = get_splits(df_frames)
@@ -42,14 +38,13 @@ def validate_hmm_folds(frames_csv,
             predictions = all_predictions[label_index:label_index + len(df_val)]
             label_index += len(df_val)
         else:
-            labels, predictions = predict_hmm(df_val, folds_dir / fold, window_size=window_size)
+            labels, predictions = predict_hmm(df_val, Path(folds_dir) / fold, window_size=window_size)
 
         if filter_size:
             predictions = [majority_filter(prediction, filter_size) for prediction in predictions]
 
         for i, row in enumerate(df_val.iterrows()):
-            row = row[1]
-            signer = row['video_id'].split('_')[1]
+            signer = row[1]['video_id'].split('_')[1]
 
             try:
                 signer_to_predictions[signer].append(predictions[i])
@@ -61,32 +56,24 @@ def validate_hmm_folds(frames_csv,
         if results_dir and not load_previous:
             all_predictions.extend(predictions)
 
-    precision = []
-    precision_sep = []
-    recall = []
-    recall_sep = []
-    f1 = []
-    f1_sep = []
+    precision, precision_sep, recall, recall_sep, f1, f1_sep = [], [], [], [], [], []
     signers = list(signer_to_labels.keys())
 
     for signer in signers:
         precision.append(precision_score(np.concatenate(signer_to_labels[signer]),
-                                         np.concatenate(signer_to_predictions[signer])))
+                                         np.concatenate(signer_to_predictions[signer]), average='weighted'))
         recall.append(recall_score(np.concatenate(signer_to_labels[signer]),
-                                   np.concatenate(signer_to_predictions[signer])))
+                                   np.concatenate(signer_to_predictions[signer]), average='weighted'))
         f1.append(f1_score(np.concatenate(signer_to_labels[signer]),
-                           np.concatenate(signer_to_predictions[signer])))
+                           np.concatenate(signer_to_predictions[signer]), average='weighted'))
 
         precision_tmp = []
         recall_tmp = []
         f1_tmp = []
         for i in range(len(signer_to_labels[signer])):
-            precision_tmp.append(precision_score(signer_to_labels[signer][i],
-                                                 signer_to_predictions[signer][i]))
-            recall_tmp.append(recall_score(signer_to_labels[signer][i],
-                                           signer_to_predictions[signer][i]))
-            f1_tmp.append(f1_score(signer_to_labels[signer][i],
-                                   signer_to_predictions[signer][i]))
+            precision_tmp.append(precision_score(signer_to_labels[signer][i], signer_to_predictions[signer][i], average='weighted'))
+            recall_tmp.append(recall_score(signer_to_labels[signer][i], signer_to_predictions[signer][i], average='weighted'))
+            f1_tmp.append(f1_score(signer_to_labels[signer][i], signer_to_predictions[signer][i], average='weighted'))
         precision_sep.append(precision_tmp)
         recall_sep.append(recall_tmp)
         f1_sep.append(f1_tmp)
