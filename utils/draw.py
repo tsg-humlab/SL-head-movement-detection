@@ -28,5 +28,10 @@ def draw_opaque_box(image, bbox, alpha=0.5, gamma=0):
 
 def set_seaborn_theme():
     sns.set_theme()
-    sns.set_style('whitegrid')
-    sns.set_context('paper')
+    # sns.set_style('whitegrid')
+    # sns.set_context('paper')
+
+def reset_seaborn_theme():
+    sns.reset_orig()
+    sns.set_style(None)
+    sns.set_context(None)

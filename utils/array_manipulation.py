@@ -48,24 +48,44 @@ def find_subject(keypoints, boxes):
 
 
 def find_subject_video(keypoints, boxes):
+    """
+    Find the subject of the video using a simple weighted average of the confidence values.
+    
+    The eyes and nose of the subject are averaged together and then combined with the bounding box confidence to obtain
+    a single confidence value for every person in the frame.
+    
+    Note that this function will only work when an image doesn't contain multiple persons facing the camera, if this is
+    the case then you should consider the output a random person facing the camera.
+    
+    :param keypoints: Keypoint predictions on a single frame
+    :param boxes: Bounding box predictions on a single frame
+    :return: Index of the subject
+    """
+    
     face_conf = np.average(keypoints[:, :, :3, 2], axis=2)
     bbox_conf = boxes[:, :, 4]
     weighted_conf = (face_conf + bbox_conf) / 2
-
+    # print(weighted_conf.max(axis=1,keepdims=1) == weighted_conf)
     return weighted_conf.max(axis=1,keepdims=1) == weighted_conf
     # return np.argmax(weighted_conf, axis=1)
 
 
-def get_uninterrupted_ones(array):
+def get_uninterrupted(array, number):
     """Credit to Psidom
     https://stackoverflow.com/questions/54446907/how-to-calculate-numbers-of-uninterrupted-repeats-in-an-array-in-python
 
     :param array:
     :return:
     """
-    d = np.diff(np.pad(array, pad_width=1, mode='constant'))
 
-    return np.flatnonzero(d == -1) - np.flatnonzero(d == 1)
+    # Make a deep copy not to disturb the original array
+    array_copy = array.copy()
+
+    # Replace all numbers that are not the number we are looking for with 0
+    array_copy[array_copy != number] = 0
+    d = np.diff(np.pad(array_copy, pad_width=1, mode='constant'))
+
+    return np.flatnonzero(d == -number) - np.flatnonzero(d == number)
 
 
 def get_change_indices(array):
