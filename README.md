@@ -19,7 +19,7 @@ While the code was developed with this specific goal in mind, you might find it 
 
 The prediction can be run for a video of a single signer using this command:
 
-python run_shake_nod_predict --v video.mp4
+python run_shake_nod_predict --v video.mp4 ['hmm'/'cnn']
 
 The output is an annotated eaf file with one tier for head movements. 
 
