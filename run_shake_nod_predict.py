@@ -8,6 +8,7 @@ import math
 import torch
 import pickle
 import os
+import joblib
 
 from pose.detector import scale_bbox
 from models.processing.facial_movement import calc_pitch_yaw_roll
@@ -15,6 +16,7 @@ from models.simple.detector import verify_window_size
 from models.processing.filters import majority_filter
 from dataset.labels.eaf_parser import Annotation
 from models.hmm.test_hmm import BACKGROUND_HMM_FILENAME, SHAKE_HMM_FILENAME, NOD_HMM_FILENAME
+from models.lstm.train_lstm_class_windows_middle_all import MODEL_LSTM_CLASS_FILENAME
 
 from lightweight_hpe.network import Network, load_snapshot
 from ultralytics import YOLO
@@ -111,10 +113,16 @@ def process_frames(video):
     headposes_list, headboxes_list, boxes_list, keypoints_list = np.array(headposes_list), np.array(headboxes_list), np.array(boxes_list), np.array(keypoints_list)
     return headposes_list, headboxes_list, boxes_list, keypoints_list
 
-def make_predictions(vector, window_size):
+def make_predictions_hmm(vector, window_size):
     """ Make predictions for a given vector using the trained HMMs. """
 
     window_size = verify_window_size(window_size)
+
+    pred_len = len(vector) - window_size + 1
+
+    windows = []
+    for i in range(pred_len):
+        windows.append(vector[i:i + window_size])
 
     with open(Path('data/folds/fold_5') / BACKGROUND_HMM_FILENAME, 'rb') as input_handle:
         hmm_bg = pickle.load(input_handle)
@@ -123,12 +131,6 @@ def make_predictions(vector, window_size):
     with open(Path('data/folds/fold_5') / NOD_HMM_FILENAME, 'rb') as input_handle:
         hmm_nod = pickle.load(input_handle)
 
-    pred_len = len(vector) - window_size + 1
-
-    windows = []
-    for i in range(pred_len):
-        windows.append(vector[i:i + window_size])
-
     windows = np.stack(windows)
     pred_bg = hmm_bg.forward_backward(windows)
     pred_shake = hmm_shake.forward_backward(windows)
@@ -136,12 +138,45 @@ def make_predictions(vector, window_size):
     log_probs = np.stack([pred_bg[4].cpu().detach().numpy(), pred_shake[4].cpu().detach().numpy(), pred_nod[4].cpu().detach().numpy()])
 
     predictions = np.argmax(log_probs, axis=0)
-    return predictions
+
+    padding = np.zeros(math.floor(window_size / 2))
+    return np.concatenate((padding, predictions, padding))
+
+def make_predictions_cnn(vector, window_size):
+    """ Make predictions for a given vector using the trained HMMs. """
+
+    import tensorflow as tf
+
+    window_size = verify_window_size(window_size)
+
+    pred_len = len(vector) - window_size + 1
+
+    windows = []
+    for i in range(pred_len):
+        windows.append(vector[i:i + window_size])
+    windows = np.array(windows)
+
+    if not (Path('data/folds/fold_5') / MODEL_LSTM_CLASS_FILENAME).exists():
+        print("No scaler found")
+        return [0]*len(vector)
+
+    scalers = joblib.load(Path('data/folds/fold_5')/'scalers_middle_all.pkl')
+    for i in range(windows.shape[2]):
+        windows[:, :, i] = scalers[i].transform(windows[:, :, i].reshape(-1, 1)).reshape(windows[:, :, i].shape)
+        
+    model = tf.keras.models.load_model(Path('data/folds/fold_5') / MODEL_LSTM_CLASS_FILENAME)
+    
+    predicted = model.predict(windows)
+    predictions = np.argmax(predicted, axis=1)
+    
+    padding = np.zeros(math.floor(window_size / 2))
+    return np.concatenate((padding, predictions, padding))
 
 
-def main(video):
+def main(video, model_type):
     capture = cv2.VideoCapture(str(video))
     fps = capture.get(cv2.CAP_PROP_FPS)
+    output_video = video
     if fps != 25:
         print(f"FPS: {fps}")
         print("Converting video to 25 FPS...")
@@ -159,7 +194,10 @@ def main(video):
 
     print("Making predictions...")
     window_size = 37
-    predictions = make_predictions(vector, window_size)
+    if model_type == 'hmm':
+        predictions = make_predictions_hmm(vector, window_size)
+    elif model_type == 'cnn':
+        predictions = make_predictions_cnn(vector, window_size)
     predictions = majority_filter(predictions, 7)
 
     print("Converting predictions to annotations...")
@@ -182,11 +220,12 @@ def main(video):
     for annotation in annotations:
         new_eaf.add_annotation("Head movement", annotation.start, annotation.end, annotation.label)
     new_eaf.add_linked_file(str(video), str(video), 'video/mp4')
-    new_eaf.to_file(str(video).split('.')[0] + '_head_movement.eaf')
+    new_eaf.to_file(str(video).split('.')[0] + '_'+model_type+'_head_movement.eaf')
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('video', type=Path)
+    parser.add_argument('video', type=Path, help='The video to process')
+    parser.add_argument('model_type', type=str, choices=['hmm', 'cnn'], help='The model type to use for prediction', default='hmm')
     args = parser.parse_args()
-    main(args.video)
+    main(args.video, args.model_type)
