@@ -4,7 +4,7 @@
 
 This repository contains the code used for the training of a model that recognizes where head shakes and nods occur in videos of people communicating in sign language. We publish this code to promote transparency and reproducibility in research.  This readme will tell you how to make annotations from a video using a model we trained and provide. Further explanations on how to use the code to train a model by yourself can be found in the Github Wiki. Please do reach out to me if you have any questions!
 
-This repo is an extension of the forked repo by @Casvanrijbroek who wrote his master thesis on detection of headshakes. Our main additions (apart from general code updates) were adding head nod detection and adding different types of models to train (LSTMs). The data was also extended, but that is not published in this repo. We also wrote a new annotation guide and added the scripts used to evaluate the inter-annotator agreement to this repo. 
+This repo is an extension of the forked repo by @Casvanrijbroek who wrote his master thesis on detection of headshakes. Our main additions (apart from general code updates) were adding head nod detection and adding different types of models to train (CNN-RNNs). The data was also extended, but that is not published in this repo. We also wrote a new annotation guide and added the scripts used to evaluate the inter-annotator agreement to this repo. 
 
 ## Relevance
 
